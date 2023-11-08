@@ -1,0 +1,11 @@
+[package]
+name = "esp-32-img-server"
+version = "0.0.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+axum = "0.5.16"
+chrono = { version = "0.4.31", features = [] }
+tokio = { version = "1.0", features = ["full"] }
