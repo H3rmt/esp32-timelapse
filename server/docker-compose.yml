@@ -1,0 +1,12 @@
+version: "3.8"
+services:
+  esp32-timelapse-server:
+    # image: h3rmt/esp32-timelapse-server
+    build: .
+    restart: always
+    ports:
+      - "8080:80"
+    environment:
+      - SECRET=f348ahj235a124ba&21a23
+    volumes:
+      - ./imgs-d:/app/imgs

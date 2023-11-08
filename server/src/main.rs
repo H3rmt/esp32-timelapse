@@ -10,14 +10,14 @@ use axum::routing::post;
 
 #[tokio::main]
 async fn main() {
+    env::var("SECRET").expect("Error: SECRET not found");
+
     let app = Router::new()
         .route("/upload", post(bytes));
 
-    let addr = SocketAddr::from(([192, 168, 187, 32], 8080));
-    // let addr = SocketAddr::from(([127, 0, 0, 1], 8080));
-    println!("listening on {}", addr);
+    let addr = SocketAddr::from(([0, 0, 0, 0], 80));
 
-    env::var("SECRET").expect("Error: SECRET not found");
+    println!("listening on {}", addr);
 
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
