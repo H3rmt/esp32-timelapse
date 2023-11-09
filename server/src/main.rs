@@ -1,20 +1,22 @@
 use std::env;
 use std::fs::File;
-use std::io::Write;
+use std::io::{Write};
 use axum::Router;
 use std::net::SocketAddr;
-use chrono::offset::Local;
 use axum::body::Bytes;
+use chrono::offset::Local;
 use axum::http::{HeaderMap, StatusCode};
+use axum::response::IntoResponse;
 use axum::routing::post;
+use rand::Rng;
 
 #[tokio::main]
 async fn main() {
     env::var("SECRET").expect("Error: SECRET not found");
 
     let app = Router::new()
-        .route("/new", post(new))
-        .route("/upload", post(upload));
+        .route("/upload", post(upload))
+        .route("/new", post(new));
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 8080));
 
@@ -23,12 +25,14 @@ async fn main() {
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
         .await
-        .unwrap();
+        .expect("server failed to start");
 }
 
 
-async fn new(headers: HeaderMap) -> Result<(), StatusCode> {
-    let time_str = Local::now().format("%d-%m-%Y_%H:%M:%S");
+async fn new(headers: HeaderMap) -> Result<String, StatusCode> {
+    let time_str = Local::now().format("%y-%m-%d");
+    let mut rng = rand::thread_rng();
+    let identifier = format!("{time_str}_{}", rng.gen_range(100..999));
 
     let auth = headers.get("Authorisation").ok_or_else(|| {
         eprintln!("Error: Authorisation header not found");
@@ -48,17 +52,17 @@ async fn new(headers: HeaderMap) -> Result<(), StatusCode> {
         return Err(StatusCode::UNAUTHORIZED);
     }
 
-    std::fs::create_dir(format!("imgs/{}", time_str)).map_err(|e| {
+    std::fs::create_dir(format!("imgs/{identifier}")).map_err(|e| {
         eprintln!("Error: Could not create folder ({e})");
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
 
-    println!("Created new folder: {}", time_str);
-    Ok(())
+    println!("Created new folder: {identifier}");
+    Ok(identifier)
 }
 
-async fn upload(body: Bytes, headers: HeaderMap) -> Result<(), StatusCode> {
-    let time_str = Local::now().format("%d-%m-%Y_%H:%M:%S");
+async fn upload(headers: HeaderMap, body: Bytes) -> impl IntoResponse {
+    let time_str = Local::now().format("%y-%m-%d_%H:%M:%S");
 
     let auth = headers.get("Authorisation").ok_or_else(|| {
         eprintln!("Error: Authorisation header not found");
@@ -89,7 +93,15 @@ async fn upload(body: Bytes, headers: HeaderMap) -> Result<(), StatusCode> {
         StatusCode::BAD_REQUEST
     })?;
 
-    let mut file = File::create(format!("imgs/{}_{}.jpg", count, time_str )).map_err(|e| {
+    let identifier = headers.get("Identifier").ok_or_else(|| {
+        eprintln!("Error: Identifier header not found");
+        StatusCode::BAD_REQUEST
+    })?.to_str().map_err(|e| {
+        eprintln!("Error: Identifier header is not a string ({e})");
+        StatusCode::BAD_REQUEST
+    })?;
+
+    let mut file = File::create(format!("imgs/{identifier}/{count}_{time_str}.jpg")).map_err(|e| {
         eprintln!("Error: Could not create file ({e})");
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
@@ -99,6 +111,6 @@ async fn upload(body: Bytes, headers: HeaderMap) -> Result<(), StatusCode> {
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
 
-    println!("Saved image: {}.{}.jpg", time_str, count);
+    println!("Saved image: {time_str}.{count}.jpg");
     Ok(())
 }

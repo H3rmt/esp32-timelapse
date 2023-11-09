@@ -7,7 +7,7 @@
 #define flashPin GPIO_NUM_4
 #define triggerPin GPIO_NUM_13
 
-#define flashPower 100
+#define flashPower 200
 #define startDelay 1500
 #define wifiDelay 2500
 
