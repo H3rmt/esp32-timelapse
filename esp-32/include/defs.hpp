@@ -1,4 +1,5 @@
-// Wi-Fi settings
+#pragma once
+
 #define WIFI_SSID "FRITZ!Box 8192"
 #define WIFI_PASSWORD "0882-5403-2419-2315-3774-9376-6483-8657-3837"
 
@@ -13,3 +14,7 @@
 #define serverPath "/upload"
 #define serverPort 8080
 #define serverSecret "f-348ahj-235a-124ba&21a23"
+
+#define ntpServer "pool.ntp.org"
+#define gmtOffset_sec 0
+#define daylightOffset_sec 3600
