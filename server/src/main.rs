@@ -16,6 +16,7 @@ async fn main() {
 
     let app = Router::new()
         .route("/upload", post(upload))
+        .route("/finish", post(finish))
         .route("/new", post(new));
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 8080));
@@ -28,6 +29,52 @@ async fn main() {
         .expect("server failed to start");
 }
 
+async fn finish(headers: HeaderMap, body: Bytes) -> impl IntoResponse {
+    let auth = headers.get("Authorisation").ok_or_else(|| {
+        eprintln!("Error: Authorisation header not found");
+        StatusCode::UNAUTHORIZED
+    })?.to_str().map_err(|e| {
+        eprintln!("Error: Authorisation header is not a string ({e})");
+        StatusCode::BAD_REQUEST
+    })?;
+
+    let secret = env::var("SECRET").map_err(|e| {
+        eprintln!("Error: SECRET not found ({e})");
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
+    if auth != secret {
+        eprintln!("Error: Authorisation header is not correct ({auth})");
+        return Err(StatusCode::UNAUTHORIZED);
+    }
+
+    let count = headers.get("Count").ok_or_else(|| {
+        eprintln!("Error: Count header not found");
+        StatusCode::BAD_REQUEST
+    })?.to_str().map_err(|e| {
+        eprintln!("Error: Count header is not a string ({e})");
+        StatusCode::BAD_REQUEST
+    })?.parse::<u32>().map_err(|e| {
+        eprintln!("Error: Count header is not a number ({e})");
+        StatusCode::BAD_REQUEST
+    })?;
+
+    let identifier = headers.get("Identifier").ok_or_else(|| {
+        eprintln!("Error: Identifier header not found");
+        StatusCode::BAD_REQUEST
+    })?.to_str().map_err(|e| {
+        eprintln!("Error: Identifier header is not a string ({e})");
+        StatusCode::BAD_REQUEST
+    })?;
+
+    std::fs::rename(format!("imgs/{identifier}"), format!("imgs/{identifier}-{count}")).map_err(|e| {
+        eprintln!("Error: Could not rename folder ({e})");
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
+    println!("Finished Folder {identifier}-{count}");
+    Ok(())
+}
 
 async fn new(headers: HeaderMap) -> Result<String, StatusCode> {
     let time_str = Local::now().format("%y-%m-%d");
