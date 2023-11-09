@@ -22,11 +22,28 @@ void setup()
 {
   pinMode(ledPin, OUTPUT);
   digitalWrite(ledPin, LOW);
+  initEEPROM();
 
   // CAUTION - We'll disable the brownout detection
   WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
 
   Serial.begin(115200);
+
+  if (getCurrentCounter() == 0)
+  {
+    if (!sendStart())
+    {
+      Serial.println("START failed");
+      Serial.println("going to sleep early");
+      sleep();
+      return;
+    }
+    Serial.println("START success");
+  }
+
+  int pictureNumber = incCounter();
+  Serial.print("pictureNumber: ");
+  Serial.println(pictureNumber);
 
   camera_config_t config = configCam();
 
@@ -63,10 +80,6 @@ void setup()
   }
   Serial.println("Camera capture success");
 
-  int pictureNumber = incCounter();
-  Serial.print("pictureNumber: ");
-  Serial.println(pictureNumber);
-
   Serial.println("Starting WIFI connection");
   if (!connectWIFI())
   {
@@ -93,10 +106,22 @@ void setup()
 
   esp_camera_fb_return(fbget);
 
+  if (digitalRead(fin_triggerPin))
+  {
+    if (!sendFinish(pictureNumber + 1))
+    {
+      Serial.println("FINISH failed");
+      Serial.println("going to sleep early");
+      sleep();
+      return;
+    }
+    Serial.println("FINISH success");
+    resetCounter();
+  }
+
   Serial.println("going to sleep");
   sleep();
 }
-
 
 void loop()
 {

@@ -6,13 +6,13 @@
 #define ledPin GPIO_NUM_33
 #define flashPin GPIO_NUM_4
 #define triggerPin GPIO_NUM_13
+#define fin_triggerPin GPIO_NUM_13 // TODO
 
 #define flashPower 200
 #define startDelay 1500
 #define wifiDelay 2500
 
 #define serverHost "192.168.187.32"
-#define serverPath "/upload"
 #define serverPort 8080
 #define serverSecret "f348ahj235a124baa1a23"
 

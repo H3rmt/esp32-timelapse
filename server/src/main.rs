@@ -17,7 +17,7 @@ async fn main() {
     let app = Router::new()
         .route("/upload", post(upload))
         .route("/finish", post(finish))
-        .route("/new", post(new));
+        .route("/start", post(start));
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 8080));
 
@@ -29,7 +29,7 @@ async fn main() {
         .expect("server failed to start");
 }
 
-async fn finish(headers: HeaderMap, body: Bytes) -> impl IntoResponse {
+async fn finish(headers: HeaderMap) -> impl IntoResponse {
     let auth = headers.get("Authorisation").ok_or_else(|| {
         eprintln!("Error: Authorisation header not found");
         StatusCode::UNAUTHORIZED
@@ -76,7 +76,7 @@ async fn finish(headers: HeaderMap, body: Bytes) -> impl IntoResponse {
     Ok(())
 }
 
-async fn new(headers: HeaderMap) -> Result<String, StatusCode> {
+async fn start(headers: HeaderMap) -> Result<String, StatusCode> {
     let time_str = Local::now().format("%y-%m-%d");
     let mut rng = rand::thread_rng();
     let identifier = format!("{time_str}_{}", rng.gen_range(100..999));
