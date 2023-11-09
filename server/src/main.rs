@@ -13,9 +13,10 @@ async fn main() {
     env::var("SECRET").expect("Error: SECRET not found");
 
     let app = Router::new()
-        .route("/upload", post(bytes));
+        .route("/new", post(new))
+        .route("/upload", post(upload));
 
-    let addr = SocketAddr::from(([0, 0, 0, 0], 80));
+    let addr = SocketAddr::from(([0, 0, 0, 0], 8080));
 
     println!("listening on {}", addr);
 
@@ -25,7 +26,38 @@ async fn main() {
         .unwrap();
 }
 
-async fn bytes(body: Bytes, headers: HeaderMap) -> Result<(), StatusCode> {
+
+async fn new(headers: HeaderMap) -> Result<(), StatusCode> {
+    let time_str = Local::now().format("%d-%m-%Y_%H:%M:%S");
+
+    let auth = headers.get("Authorisation").ok_or_else(|| {
+        eprintln!("Error: Authorisation header not found");
+        StatusCode::UNAUTHORIZED
+    })?.to_str().map_err(|e| {
+        eprintln!("Error: Authorisation header is not a string ({e})");
+        StatusCode::BAD_REQUEST
+    })?;
+
+    let secret = env::var("SECRET").map_err(|e| {
+        eprintln!("Error: SECRET not found ({e})");
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
+    if auth != secret {
+        eprintln!("Error: Authorisation header is not correct ({auth})");
+        return Err(StatusCode::UNAUTHORIZED);
+    }
+
+    std::fs::create_dir(format!("imgs/{}", time_str)).map_err(|e| {
+        eprintln!("Error: Could not create folder ({e})");
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
+    println!("Created new folder: {}", time_str);
+    Ok(())
+}
+
+async fn upload(body: Bytes, headers: HeaderMap) -> Result<(), StatusCode> {
     let time_str = Local::now().format("%d-%m-%Y_%H:%M:%S");
 
     let auth = headers.get("Authorisation").ok_or_else(|| {
@@ -57,7 +89,7 @@ async fn bytes(body: Bytes, headers: HeaderMap) -> Result<(), StatusCode> {
         StatusCode::BAD_REQUEST
     })?;
 
-    let mut file = File::create(format!("imgs/{}.{}.jpg", time_str, count)).map_err(|e| {
+    let mut file = File::create(format!("imgs/{}_{}.jpg", count, time_str )).map_err(|e| {
         eprintln!("Error: Could not create file ({e})");
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
@@ -67,5 +99,6 @@ async fn bytes(body: Bytes, headers: HeaderMap) -> Result<(), StatusCode> {
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
 
+    println!("Saved image: {}.{}.jpg", time_str, count);
     Ok(())
 }

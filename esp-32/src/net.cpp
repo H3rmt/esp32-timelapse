@@ -27,12 +27,14 @@ bool sendPic(camera_fb_t *pic, int pictureNumber)
     Serial.println("Starting POST");
     while (connAttempts < 9)
     {
-        esp_err_t errr = esp_http_client_perform(http_client);
+        esp_err_t err = esp_http_client_perform(http_client);
 
         Serial.print("Sending POST... [code: ");
-        Serial.print(errr);
+        Serial.printf("Post return value: 0x%x (%d)", err, err);
         Serial.print(" - ");
         Serial.print(esp_http_client_get_status_code(http_client));
+        Serial.print(" - ");
+        Serial.print(esp_http_client_get_errno(http_client));
         Serial.println("]");
 
         if (esp_http_client_get_status_code(http_client) == 200)
@@ -42,7 +44,7 @@ bool sendPic(camera_fb_t *pic, int pictureNumber)
         }
 
         connAttempts++;
-        delay(2000);
+        delay(5000);
     }
 
     esp_http_client_cleanup(http_client);

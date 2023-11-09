@@ -8,12 +8,13 @@
 #define triggerPin GPIO_NUM_13
 
 #define flashPower 100
-#define startDelay 2500
+#define startDelay 1500
+#define wifiDelay 2500
 
 #define serverHost "192.168.187.32"
 #define serverPath "/upload"
 #define serverPort 8080
-#define serverSecret "f-348ahj-235a-124ba&21a23"
+#define serverSecret "f348ahj235a124baa1a23"
 
 #define ntpServer "pool.ntp.org"
 #define gmtOffset_sec 0

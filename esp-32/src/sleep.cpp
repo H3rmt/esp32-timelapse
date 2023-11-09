@@ -19,8 +19,8 @@ void sleep()
   digitalWrite(ledPin, HIGH);
   delay(1000);
   // Use this to wakeup when trigger pin goes HIGH
-  // esp_sleep_enable_ext0_wakeup(triggerPin, 1);
+  esp_sleep_enable_ext0_wakeup(triggerPin, 1);
   // Use this to wakeup when trigger pin goes LOW
-  esp_sleep_enable_ext0_wakeup(triggerPin, 0);
+  // esp_sleep_enable_ext0_wakeup(triggerPin, 0);
   esp_deep_sleep_start();
 }

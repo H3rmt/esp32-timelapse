@@ -30,6 +30,8 @@ void setup()
 
   camera_config_t config = configCam();
 
+  initFlash();
+
   // Disable any hold on pin 4 that was placed before ESP32 went to sleep
   // rtc_gpio_hold_dis(flashPin);
 
@@ -46,7 +48,10 @@ void setup()
   }
 
   setFlash(flashPower);
+  Serial.println("started Flash");
+
   delay(startDelay);
+  Serial.println("taking Photo");
   camera_fb_t *fbget = esp_camera_fb_get();
   setFlash(0);
   if (!fbget)
@@ -72,10 +77,10 @@ void setup()
   }
   Serial.println("WIFI connection success");
   Serial.print("Signal Level: ");
-  Serial.println(WiFi.RSSI());
-  Serial.println("-50: excelent; -60: very good; -70: good; -80: low; -90: Very low");
+  Serial.print(WiFi.RSSI());
+  Serial.println("  [-50: excelent; -60: very good; -70: good; -80: low; -90: Very low]");
 
-  delay(1000);
+  delay(wifiDelay);
 
   if (!sendPic(fbget, pictureNumber))
   {

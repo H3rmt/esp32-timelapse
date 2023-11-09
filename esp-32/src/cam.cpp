@@ -31,7 +31,7 @@ camera_config_t configCam()
     config.pixel_format = PIXFORMAT_JPEG;
     config.fb_location = CAMERA_FB_IN_DRAM;
     config.frame_size = FRAMESIZE_SVGA;
-    config.jpeg_quality = 8;
+    config.jpeg_quality = 10;
     config.fb_count = 1;
 
     return config;
