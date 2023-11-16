@@ -19,3 +19,16 @@
 #define ntpServer "pool.ntp.org"
 #define gmtOffset_sec 0
 #define daylightOffset_sec 3600
+
+
+#define ERROR_OK 1
+
+#define ERROR_SD_INIT_FAILED 2
+#define ERROR_WIFI_FAILED 3
+#define ERROR_SEND_START_FAILED 4
+#define ERROR_CREATE_FOLDER_FAILED 5
+// 750 ms blink 
+#define ERROR_CAM_INIT_FAILED 6 // 2
+#define ERROR_CAM_GET_FAILED 7 // 3
+#define ERROR_SAVE_IMG_FAILED 8 // 4
+#define ERROR_SEND_FINISH_FAILED 9 // 5

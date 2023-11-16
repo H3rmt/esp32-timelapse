@@ -2,6 +2,6 @@
 
 #include <esp_camera.h>
 
-bool sendPic(camera_fb_t*, int);
-bool sendFinish(int);
-bool sendStart();
+bool sendPic(String pic, String pictureNumber, String ident);
+bool sendFinish(int pictureCount, String ident);
+bool sendStart(String &ident);

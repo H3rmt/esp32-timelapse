@@ -7,21 +7,22 @@
 
 bool connectWIFI()
 {
-  WiFi.disconnect();
+  // WiFi.disconnect();
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  delay(2000);
 
   int connAttempts = 0;
-  while (connAttempts < 20)
+  while (connAttempts < 24)
   {
-    Serial.println("Connecting WIFI... ");
-    delay(5000);
+    Serial.println("Connecting WIFI... {" + String(connAttempts) + "}");
 
     if (WiFi.status() == WL_CONNECTED)
     {
       return true;
     }
 
+    delay(5000);
     connAttempts++;
   }
 
@@ -29,7 +30,8 @@ bool connectWIFI()
   return false;
 }
 
-void wifiOff() {
+void wifiOff()
+{
   WiFi.disconnect(true);
   WiFi.mode(WIFI_OFF);
 }

@@ -1,87 +1,60 @@
 #include <Arduino.h>
-#include <esp_http_client.h>
+// #include <esp_http_client.h>
+#include <HTTPClient.h>
+#include <esp_camera.h>
 
 #include "defs.hpp"
 
 #include "net.hpp"
 
-bool sendPic(camera_fb_t *pic, int pictureNumber)
+bool sendPic(String pic, String pictureNumber, String ident)
 {
-    esp_http_client_config_t config_client = {};
-    config_client.host = serverHost;
-    config_client.port = serverPort;
-    config_client.path = "/upload";
-    config_client.method = HTTP_METHOD_POST;
+    HTTPClient http;
+    http.begin(serverHost, serverPort, String("/upload") + "?count=" + pictureNumber + "&identifier=" + ident);
 
-    esp_http_client_handle_t http_client = esp_http_client_init(&config_client);
-
-    char cstr[16];
-    itoa(pictureNumber, cstr, 10);
-
-    esp_http_client_set_header(http_client, "Count", cstr);
-    esp_http_client_set_header(http_client, "Authorisation", serverSecret);
-    esp_http_client_set_post_field(http_client, (const char *)pic->buf, pic->len);
+    http.setReuse(true);
+    http.setAuthorizationType("Bearer");
+    http.setAuthorization(serverSecret);
 
     int connAttempts = 0;
-    Serial.println("Starting POST");
+    Serial.println("Starting sendPic" + http.getLocation());
     while (connAttempts < 9)
     {
-        esp_err_t err = esp_http_client_perform(http_client);
+        int httpCode = http.POST(pic);
+        Serial.println("Sending... [code: " + String(httpCode) + " ] {" + connAttempts + "}");
 
-        Serial.print("Sending POST... [code: ");
-        Serial.printf("Post return value: 0x%x (%d)", err, err);
-        Serial.print(" - ");
-        Serial.print(esp_http_client_get_status_code(http_client));
-        Serial.print(" - ");
-        Serial.print(esp_http_client_get_errno(http_client));
-        Serial.println("]");
-
-        if (esp_http_client_get_status_code(http_client) == 200)
+        if (httpCode == 200)
         {
-            esp_http_client_cleanup(http_client);
+            http.end();
             return true;
         }
 
         connAttempts++;
         delay(5000);
     }
-
-    esp_http_client_cleanup(http_client);
+    http.end();
     return false;
 }
 
-bool sendFinish(int pictureCount) {
-    esp_http_client_config_t config_client = {};
-    config_client.host = serverHost;
-    config_client.port = serverPort;
-    config_client.path = "/finish";
-    config_client.method = HTTP_METHOD_POST;
+bool sendFinish(int pictureCount, String ident)
+{
+    HTTPClient http;
+    http.begin(serverHost, serverPort, String("/finish") + "?count=" + pictureCount + "&identifier=" + ident);
 
-    esp_http_client_handle_t http_client = esp_http_client_init(&config_client);
-
-    char cstr[16];
-    itoa(pictureCount, cstr, 10);
-
-    esp_http_client_set_header(http_client, "Count", cstr);
-    esp_http_client_set_header(http_client, "Authorisation", serverSecret);
+    http.setReuse(true);
+    http.setAuthorizationType("Bearer");
+    http.setAuthorization(serverSecret);
 
     int connAttempts = 0;
-    Serial.println("Starting POST");
+    Serial.println("Starting sendFinish" + http.getLocation());
     while (connAttempts < 9)
     {
-        esp_err_t err = esp_http_client_perform(http_client);
+        int httpCode = http.GET();
+        Serial.println("Sending... [code: " + String(httpCode) + " ] {" + connAttempts + "}");
 
-        Serial.print("Sending POST... [code: ");
-        Serial.printf("Post return value: 0x%x (%d)", err, err);
-        Serial.print(" - ");
-        Serial.print(esp_http_client_get_status_code(http_client));
-        Serial.print(" - ");
-        Serial.print(esp_http_client_get_errno(http_client));
-        Serial.println("]");
-
-        if (esp_http_client_get_status_code(http_client) == 200)
+        if (httpCode == 200)
         {
-            esp_http_client_cleanup(http_client);
+            http.end();
             return true;
         }
 
@@ -89,38 +62,33 @@ bool sendFinish(int pictureCount) {
         delay(5000);
     }
 
-    esp_http_client_cleanup(http_client);
+    http.end();
     return false;
 }
 
-bool sendStart() {
-    esp_http_client_config_t config_client = {};
-    config_client.host = serverHost;
-    config_client.port = serverPort;
-    config_client.path = "/start";
-    config_client.method = HTTP_METHOD_POST;
+bool sendStart(String &ident)
+{
+    HTTPClient http;
+    http.begin(serverHost, serverPort, "/start");
 
-    esp_http_client_handle_t http_client = esp_http_client_init(&config_client);
-
-    esp_http_client_set_header(http_client, "Authorisation", serverSecret);
+    http.setReuse(true);
+    http.setAuthorizationType("Bearer");
+    http.setAuthorization(serverSecret);
 
     int connAttempts = 0;
-    Serial.println("Starting POST");
+    Serial.println("Starting sendStart" + http.getLocation());
     while (connAttempts < 9)
     {
-        esp_err_t err = esp_http_client_perform(http_client);
+        int httpCode = http.GET();
+        Serial.println("Sending... [code: " + String(httpCode) + " ] {" + connAttempts + "}");
 
-        Serial.print("Sending POST... [code: ");
-        Serial.printf("Post return value: 0x%x (%d)", err, err);
-        Serial.print(" - ");
-        Serial.print(esp_http_client_get_status_code(http_client));
-        Serial.print(" - ");
-        Serial.print(esp_http_client_get_errno(http_client));
-        Serial.println("]");
-
-        if (esp_http_client_get_status_code(http_client) == 200)
+        if (httpCode == 200)
         {
-            esp_http_client_cleanup(http_client);
+            String payload = http.getString();
+            Serial.println("Received: " + payload);
+            ident = payload;
+
+            http.end();
             return true;
         }
 
@@ -128,6 +96,6 @@ bool sendStart() {
         delay(5000);
     }
 
-    esp_http_client_cleanup(http_client);
+    http.end();
     return false;
 }
