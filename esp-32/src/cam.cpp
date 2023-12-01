@@ -30,12 +30,14 @@ camera_config_t configCam()
     config.pin_reset = RESET_GPIO_NUM;
     config.xclk_freq_hz = 20000000;
     config.pixel_format = PIXFORMAT_JPEG;
+    config.fb_location = CAMERA_FB_IN_PSRAM;
+    config.grab_mode = CAMERA_GRAB_LATEST;
 
     if (psramFound())
     {
         Serial.println("using psram");
         config.frame_size = FRAMESIZE_UXGA; // FRAMESIZE_ + QVGA|CIF|VGA|SVGA|XGA|SXGA|UXGA
-        config.jpeg_quality = 8;
+        config.jpeg_quality = 12;
         config.fb_count = 2;
     }
     else
@@ -47,18 +49,6 @@ camera_config_t configCam()
     }
 
     return config;
-}
-
-void initFlash()
-{
-    // Use PWM channel 7 to control the white on-board LED (flash) connected to GPIO 4
-    ledcSetup(7, 5000, 8);
-    ledcAttachPin(flashPin, 7);
-    ledcWrite(7, 0);
-}
-void setFlash(uint32_t power)
-{
-    ledcWrite(7, power);
 }
 
 void configSensor()
@@ -91,4 +81,17 @@ void configSensor()
     s->set_colorbar(s, 0); // Colour Testbar 0 = disable , 1 = enable
     s->set_raw_gma(s, 1);  // 0 = disable , 1 = enable
     s->set_dcw(s, 1);      // 0 = disable , 1 = enable
+}
+
+void initFlash()
+{
+    // Use PWM channel 7 to control the white on-board LED (flash) connected to GPIO 4
+    ledcSetup(7, 5000, 8);
+    ledcAttachPin(flashPin, 7);
+    ledcWrite(7, 0);
+}
+void setFlash(uint32_t power)
+{
+    Serial.println("setFlash: " + String(power));
+    ledcWrite(7, power);
 }
