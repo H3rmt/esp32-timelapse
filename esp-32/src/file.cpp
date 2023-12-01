@@ -1,18 +1,24 @@
+#define BOARD_HAS_1BIT_SDMMC
+
 #include <Arduino.h>
 #include <FS.h>
-#include <LittleFS.h>
-// #include <SD_MMC.h>
+// #include <SD.h>
+// #include <LittleFS.h>
+#include <SD_MMC.h>
 #include <esp_camera.h>
 
-#include "esp_vfs_fat.h"
+// #include "esp_vfs_fat.h"
 #include "file.hpp"
-
-#define FORMAT_LITTLEFS_IF_FAILED false
 
 bool openSD()
 {
     // if (!SD_MMC.begin("/imgs", true, false, SDMMC_FREQ_HIGHSPEED))
-    if (!LittleFS.begin(FORMAT_LITTLEFS_IF_FAILED))
+    if (!SD_MMC.begin())
+    // int SD_CS_PIN = 19;
+    // SPI.begin(18, 36, 26, SD_CS_PIN);
+    // SPI.setDataMode(SPI_MODE0);
+    // if (!SD.begin(SD_CS_PIN, SPI, 4000000U, "/sd", (uint8_t)5U, FORMAT_IF_FAILED))
+    // if (!SD.begin())
     {
         Serial.println("SD Card Mount Failed");
         return false;
@@ -29,7 +35,7 @@ bool openSD()
 
 bool createFolder(String path)
 {
-    fs::FS &fs = LittleFS;
+    fs::FS &fs = SD_MMC;
     Serial.println("Folder name: " + path);
 
     if (!fs.mkdir(path))
@@ -43,7 +49,7 @@ bool createFolder(String path)
 
 bool saveImg(camera_fb_t *pic, String path)
 {
-    fs::FS &fs = LittleFS;
+    fs::FS &fs = SD_MMC;
     Serial.println("Picture file name: " + path);
 
     File file = fs.open(path, FILE_WRITE, true);
@@ -64,12 +70,14 @@ bool saveImg(camera_fb_t *pic, String path)
 
 void iterateFolder(String ident, void (*function)(String, String, String))
 {
-    File root = LittleFS.open(ident);
+    File root = SD_MMC.open(ident);
 
     File file = root.openNextFile();
 
     while (file)
     {
+        Serial.println(file.name());
+        Serial.println(file.readString());
         function(String(file.name()), file.readString(), ident);
         file = root.openNextFile();
     }
