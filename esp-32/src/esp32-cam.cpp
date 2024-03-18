@@ -3,8 +3,8 @@
 #include <driver/rtc_io.h>
 #include <WiFi.h>
 
-#define USESD
-// #define USEFLASH
+// #define USESD
+#define USEFLASH
 
 #include "cam.hpp"
 #include "eeprom.hpp"
@@ -32,6 +32,12 @@ void setup()
 
   Serial.begin(115200);
 
+#ifdef USEFLASH
+  initFlash();
+#endif
+  // Disable any hold on pin 4 that was placed before ESP32 went to sleep
+  rtc_gpio_hold_dis(flashPin);
+
 #ifdef USESD
   if (!openSD())
   {
@@ -49,6 +55,16 @@ void setup()
   // if (getCurrentCounter() == 8)
   {
     Serial.println("START detected");
+
+#ifdef USEFLASH
+    setFlash(flashPower / 2);
+    delay(600);
+    setFlash(0);
+    delay(600);
+    setFlash(flashPower / 2);
+    delay(600);
+    setFlash(0);
+#endif
 
     initWiFi();
     if (!sendStart(ident))
@@ -87,12 +103,6 @@ void setup()
 
   camera_config_t config = configCam();
 
-#ifdef USEFLASH
-  initFlash();
-#endif
-  // Disable any hold on pin 4 that was placed before ESP32 went to sleep
-  rtc_gpio_hold_dis(flashPin);
-
   // Short pause helps to ensure the I2C interface has initialised properly before attempting to detect the camera
   delay(150);
 
@@ -106,7 +116,7 @@ void setup()
     return;
   }
 
-  // configSensor();
+  configSensor();
 
 #ifdef USEFLASH
   setFlash(flashPower);
@@ -127,7 +137,7 @@ void setup()
     sleep();
     return;
   }
-  Serial.println("Camera capture success");
+  Serial.println("Camera capture success /sleeping startDelay*3");
 
   // check if print stopped
   delay(startDelay * 3);
@@ -157,9 +167,19 @@ void setup()
   Serial.println("SEND success");
 #endif
 
-  if (finish) // IF LOW
+  if (finish == LOW) // IF LOW
   {
     Serial.println("DETECTED FINISH");
+#ifdef USEFLASH
+    setFlash(flashPower / 2);
+    delay(400);
+    setFlash(0);
+    delay(300);
+    setFlash(flashPower / 2);
+    delay(400);
+    setFlash(0);
+#endif
+
     initWiFi();
 #ifdef USESD
     iterateFolder("/" + ident, [](String name, String content, String ident)
@@ -181,7 +201,7 @@ void setup()
       sleep();
       return;
     }
-    Serial.println("FINISH success");
+    Serial.println("FINISH success /sleeping 10_000");
     reset();
 
     delay(10000); // wait for printer to move away
@@ -205,22 +225,24 @@ void errorLED(int code)
 {
   Serial.print("Error Code:");
   Serial.println(code);
-  if (code <= 5)
-    for (size_t i = 0; i < code; i++)
-    {
-      digitalWrite(ledPin, HIGH);
-      delay(500);
-      digitalWrite(ledPin, LOW);
-      delay(500);
-    }
-  else
-    for (size_t i = 0; i < code - 4; i++)
-    {
-      digitalWrite(ledPin, HIGH);
-      delay(1000);
-      digitalWrite(ledPin, LOW);
-      delay(1000);
-    }
+
+  // indicate exit code
+  digitalWrite(ledPin, LOW);
+  delay(1500);
+  digitalWrite(ledPin, HIGH);
+  delay(500);
+
+  for (size_t i = 0; i < code; i++)
+  {
+    digitalWrite(ledPin, LOW);
+    // Serial.println("LED On");
+    delay(500);
+
+    digitalWrite(ledPin, HIGH);
+    // Serial.println("LED OFF");
+    delay(500);
+  }
+  Serial.println("Error code indicated");
 }
 
 void initWiFi()

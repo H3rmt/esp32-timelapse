@@ -1,15 +1,4 @@
 FROM rust:1.73.0 as build
-
-# WORKDIR /deps
-# # Cache downloaded+built dependencies
-# COPY Cargo.toml Cargo.lock /deps/
-# RUN \
-#     mkdir src && \
-#     echo 'fn main() {}' > ./src/main.rs && \
-#     cargo build --release && \
-#     rm -Rvf /deps
-
-# Build our actual code
 WORKDIR /app
 COPY Cargo.toml Cargo.lock /app/
 COPY src /app/src

@@ -78,7 +78,7 @@ void configSensor()
     s->set_lenc(s, 1);     // Lens correction 0 = disable , 1 = enable
     s->set_hmirror(s, 0);  // Horizontal flip image 0 = disable , 1 = enable
     s->set_vflip(s, 0);    // Vertical flip image 0 = disable , 1 = enable
-    s->set_colorbar(s, 0); // Colour Testbar 0 = disable , 1 = enable
+    s->set_colorbar(s, 1); // Colour Testbar 0 = disable , 1 = enable
     s->set_raw_gma(s, 1);  // 0 = disable , 1 = enable
     s->set_dcw(s, 1);      // 0 = disable , 1 = enable
 }

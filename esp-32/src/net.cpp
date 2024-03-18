@@ -11,10 +11,7 @@ bool sendPic(String pic, String pictureNumber, String ident)
 {
     HTTPClient http;
     http.begin(serverHost, serverPort, String("/upload") + "?count=" + pictureNumber + "&identifier=" + ident);
-
     http.setReuse(true);
-    http.setAuthorizationType("Bearer");
-    http.setAuthorization(serverSecret);
 
     int connAttempts = 0;
     Serial.println("Starting sendPic" + http.getLocation());
@@ -40,10 +37,7 @@ bool sendFinish(int pictureCount, String ident)
 {
     HTTPClient http;
     http.begin(serverHost, serverPort, String("/finish") + "?count=" + pictureCount + "&identifier=" + ident);
-
     http.setReuse(true);
-    http.setAuthorizationType("Bearer");
-    http.setAuthorization(serverSecret);
 
     int connAttempts = 0;
     Serial.println("Starting sendFinish" + http.getLocation());
@@ -70,10 +64,7 @@ bool sendStart(String &ident)
 {
     HTTPClient http;
     http.begin(serverHost, serverPort, "/start");
-
     http.setReuse(true);
-    http.setAuthorizationType("Bearer");
-    http.setAuthorization(serverSecret);
 
     int connAttempts = 0;
     Serial.println("Starting sendStart" + http.getLocation());

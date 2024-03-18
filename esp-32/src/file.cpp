@@ -13,6 +13,8 @@
 bool openSD()
 {
     // if (!SD_MMC.begin("/imgs", true, false, SDMMC_FREQ_HIGHSPEED))
+    // if (!SD_MMC.begin("/sdcard", false, false, SDMMC_FREQ_DEFAULT))
+    // if (!SD_MMC.begin("/sdcard", true, true, SDMMC_FREQ_DEFAULT))
     if (!SD_MMC.begin())
     // int SD_CS_PIN = 19;
     // SPI.begin(18, 36, 26, SD_CS_PIN);
@@ -77,7 +79,6 @@ void iterateFolder(String ident, void (*function)(String, String, String))
     while (file)
     {
         Serial.println(file.name());
-        Serial.println(file.readString());
         function(String(file.name()), file.readString(), ident);
         file = root.openNextFile();
     }

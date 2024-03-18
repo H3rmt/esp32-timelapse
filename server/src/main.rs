@@ -8,7 +8,6 @@ use axum::extract::{Query};
 use chrono::offset::Local;
 use axum::http::{StatusCode};
 use axum::response::IntoResponse;
-use axum_auth::AuthBearer;
 use rand::Rng;
 use serde::Deserialize;
 use tokio::fs::File;
@@ -16,22 +15,16 @@ use tokio::io::AsyncWriteExt;
 
 #[tokio::main]
 async fn main() {
-    env::var("SECRET").expect("Error: SECRET not found");
-    env::var("FPS").expect("Error: FPS not found"); 
+    env::var("FPS").expect("Error: FPS not found");
 
     let app = Router::new()
         .route("/upload", post(upload))
         .route("/finish", get(finish))
         .route("/start", get(start));
 
-    let addr = SocketAddr::from(([0, 0, 0, 0], 8080));
-
-    println!("listening on {}", addr);
-
-    axum::Server::bind(&addr)
-        .serve(app.into_make_service())
-        .await
-        .expect("server failed to start");
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:8080").await.expect("server failed to start");
+    println!("listening on {:?}", listener);
+    axum::serve(listener, app).await.unwrap();
 }
 
 #[derive(Debug, Deserialize)]
@@ -41,18 +34,7 @@ struct Params {
     identifier: Option<String>,
 }
 
-// #[debug_handler]
-async fn finish(AuthBearer(token): AuthBearer, Query(params): Query<Params>) -> impl IntoResponse {
-    let secret = env::var("SECRET").map_err(|e| {
-        eprintln!("Error: SECRET not found ({e})");
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
-
-    if token != secret {
-        eprintln!("Error: Authorisation is not correct ({token})");
-        return Err(StatusCode::UNAUTHORIZED);
-    }
-
+async fn finish(Query(params): Query<Params>) -> impl IntoResponse {
     let count = params.count.ok_or_else(|| {
         eprintln!("Error: Count param not found");
         StatusCode::BAD_REQUEST
@@ -63,9 +45,9 @@ async fn finish(AuthBearer(token): AuthBearer, Query(params): Query<Params>) -> 
         StatusCode::BAD_REQUEST
     })?;
 
-    std::fs::rename(format!("imgs/{identifier}"), format!("imgs/{identifier}-{count}")).map_err(|e| {
-    	eprintln!("Error: Could not rename folder ({e})");
-    	StatusCode::INTERNAL_SERVER_ERROR
+    std::fs::rename(format!("imgs/{identifier}"), format!("imgs/{identifier}-finished-{count}")).map_err(|e| {
+        eprintln!("Error: Could not rename folder ({e})");
+        StatusCode::INTERNAL_SERVER_ERROR
     })?;
 
     println!("Finished Folder {identifier}-{count}");
@@ -76,38 +58,19 @@ async fn finish(AuthBearer(token): AuthBearer, Query(params): Query<Params>) -> 
     })?;
 
     println!("Exporting video...");
-    let path = export::export(format!("imgs/{identifier}-{count}"), fps).await.map_err(|e| {
+    let path = export::export(format!("imgs/{identifier}-finished-{count}"), fps).await.map_err(|e| {
         eprintln!("Error: Could not export video ({e})");
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
 
     println!("Finished exporting video {path}");
-
-    Ok(())
+    Ok::<(), axum::response::ErrorResponse>(())
 }
 
-async fn start(AuthBearer(token): AuthBearer) -> Result<String, StatusCode> {
+async fn start() -> Result<String, StatusCode> {
     let time_str = Local::now().format("%y-%m-%d");
     let mut rng = rand::thread_rng();
     let identifier = format!("{time_str}_{}", rng.gen_range(100..999));
-
-    // let auth = headers.get("Authorisation").ok_or_else(|| {
-    //     eprintln!("Error: Authorisation header not found");
-    //     StatusCode::UNAUTHORIZED
-    // })?.to_str().map_err(|e| {
-    //     eprintln!("Error: Authorisation header is not a string ({e})");
-    //     StatusCode::BAD_REQUEST
-    // })?;
-
-    let secret = env::var("SECRET").map_err(|e| {
-        eprintln!("Error: SECRET not found ({e})");
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
-
-    if token != secret {
-        eprintln!("Error: Authorisation is not correct ({token})");
-        return Err(StatusCode::UNAUTHORIZED);
-    }
 
     std::fs::create_dir(format!("imgs/{identifier}")).map_err(|e| {
         eprintln!("Error: Could not create folder ({e})");
@@ -118,19 +81,9 @@ async fn start(AuthBearer(token): AuthBearer) -> Result<String, StatusCode> {
     Ok(identifier)
 }
 
-// #[debug_handler]
-async fn upload(AuthBearer(token): AuthBearer, Query(params): Query<Params>, body: Bytes) -> impl IntoResponse {
+#[debug_handler]
+async fn upload(Query(params): Query<Params>, body: Bytes) -> impl IntoResponse {
     let time_str = Local::now().format("%y-%m-%d_%H:%M:%S");
-
-    let secret = env::var("SECRET").map_err(|e| {
-        eprintln!("Error: SECRET not found ({e})");
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
-
-    if token != secret {
-        eprintln!("Error: Authorisation is not correct ({token})");
-        return Err(StatusCode::UNAUTHORIZED);
-    }
 
     let count = params.count.ok_or_else(|| {
         eprintln!("Error: Count param not found");
@@ -142,16 +95,16 @@ async fn upload(AuthBearer(token): AuthBearer, Query(params): Query<Params>, bod
         StatusCode::BAD_REQUEST
     })?;
 
-    let mut file = File::create(format!("imgs/{identifier}/{count}_{time_str}.jpg")).await.map_err(|e| {
-        eprintln!("Error: Could not create file ({e})");
+    let mut file = File::create(format!("imgs/{identifier}/{count}.jpg")).await.map_err(|e| {
+        eprintln!("Error: Could not create file({}) ({e})", format!("imgs/{identifier}/{count}.jpg"));
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
 
     file.write_all(&body).await.map_err(|e| {
-        eprintln!("Error: Could not write to file ({e})");
+        eprintln!("Error: Could not write to file({:?}) ({e})", file);
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
 
-    println!("Saved image: {time_str}.{count}.jpg");
-    Ok(())
+    println!("Saved image: ({time_str}): {count}.jpg");
+    Ok::<(), axum::response::ErrorResponse>(())
 }
