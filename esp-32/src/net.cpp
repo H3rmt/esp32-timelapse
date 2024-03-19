@@ -10,7 +10,9 @@
 bool sendPic(String pic, String pictureNumber, String ident)
 {
     HTTPClient http;
-    http.begin(serverHost, serverPort, String("/upload") + "?count=" + pictureNumber + "&identifier=" + ident);
+    http.begin(SERVER_HOST, SERVER_PORT, String("/upload") + "?count=" + pictureNumber + "&identifier=" + ident);
+    http.setAuthorization(SITE_USER, SITE_PASSWORD);
+    http.setUserAgent("ESP32-CAM");
     http.setReuse(true);
 
     int connAttempts = 0;
@@ -36,7 +38,9 @@ bool sendPic(String pic, String pictureNumber, String ident)
 bool sendFinish(int pictureCount, String ident)
 {
     HTTPClient http;
-    http.begin(serverHost, serverPort, String("/finish") + "?count=" + pictureCount + "&identifier=" + ident);
+    http.begin(SERVER_HOST, SERVER_PORT, String("/finish") + "?count=" + pictureCount + "&identifier=" + ident);
+    http.setAuthorization(SITE_USER, SITE_PASSWORD);
+    http.setUserAgent("ESP32-CAM");
     http.setReuse(true);
 
     int connAttempts = 0;
@@ -62,7 +66,9 @@ bool sendFinish(int pictureCount, String ident)
 bool sendStart(String &ident)
 {
     HTTPClient http;
-    http.begin(serverHost, serverPort, "/start");
+    http.begin(SERVER_HOST, SERVER_PORT, "/start");
+    http.setAuthorization(SITE_USER, SITE_PASSWORD);
+    http.setUserAgent("ESP32-CAM");
     http.setReuse(true);
 
     int connAttempts = 0;

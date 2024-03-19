@@ -1,7 +1,13 @@
 #pragma once
 
-#define WIFI_SSID "FRITZ!Box 8192"
-#define WIFI_PASSWORD "0882-5403-2419-2315-3774-9376-6483-8657-3837"
+//  loaded from .env
+extern const char *WIFI_SSID;
+extern const char *WIFI_PASSWORD;
+extern const char *SITE_USER;
+extern const char *SITE_PASSWORD;
+
+extern const char *SERVER_HOST;
+extern const int SERVER_PORT;
 
 #define ledPin GPIO_NUM_33
 #define flashPin GPIO_NUM_4
@@ -16,9 +22,6 @@
 #define wifiStartTimeout 2000
 #define netTimeout 5000
 #define netRetries 7
-
-#define serverHost "192.168.187.32"
-#define serverPort 8080
 
 #define ERROR_OK 1
 
