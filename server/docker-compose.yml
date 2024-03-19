@@ -6,7 +6,5 @@ services:
     restart: always
     ports:
       - "8080:80"
-    environment:
-      - SECRET=f348ahj235a124baa1a23
     volumes:
       - ./imgs-d:/app/imgs

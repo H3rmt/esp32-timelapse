@@ -1,5 +1,5 @@
 #include <Arduino.h>
-// #include <esp_http_client.h>
+
 #include <HTTPClient.h>
 #include <esp_camera.h>
 
@@ -14,20 +14,20 @@ bool sendPic(String pic, String pictureNumber, String ident)
     http.setReuse(true);
 
     int connAttempts = 0;
-    Serial.println("Starting sendPic" + http.getLocation());
-    while (connAttempts < 9)
+    println("Starting sendPic: " + http.getLocation());
+    while (connAttempts <= netRetries)
     {
         int httpCode = http.POST(pic);
-        Serial.println("Sending... [code: " + String(httpCode) + " ] {" + connAttempts + "}");
+        println("Sending... [code:" + String(httpCode) + " ] " + connAttempts + " Attempt");
 
-        if (httpCode == 200)
+        if (httpCode == HTTP_CODE_OK)
         {
             http.end();
             return true;
         }
 
         connAttempts++;
-        delay(5000);
+        delay(netTimeout);
     }
     http.end();
     return false;
@@ -40,22 +40,21 @@ bool sendFinish(int pictureCount, String ident)
     http.setReuse(true);
 
     int connAttempts = 0;
-    Serial.println("Starting sendFinish" + http.getLocation());
-    while (connAttempts < 9)
+    println("Starting sendFinish: " + http.getLocation());
+    while (connAttempts <= netRetries)
     {
         int httpCode = http.GET();
-        Serial.println("Sending... [code: " + String(httpCode) + " ] {" + connAttempts + "}");
+        println("Sending... [code:" + String(httpCode) + " ] " + connAttempts + " Attempt");
 
-        if (httpCode == 200)
+        if (httpCode == HTTP_CODE_OK)
         {
             http.end();
             return true;
         }
 
         connAttempts++;
-        delay(5000);
+        delay(netTimeout);
     }
-
     http.end();
     return false;
 }
@@ -67,16 +66,16 @@ bool sendStart(String &ident)
     http.setReuse(true);
 
     int connAttempts = 0;
-    Serial.println("Starting sendStart" + http.getLocation());
-    while (connAttempts < 9)
+    println("Starting sendFinish: " + http.getLocation());
+    while (connAttempts <= netRetries)
     {
         int httpCode = http.GET();
-        Serial.println("Sending... [code: " + String(httpCode) + " ] {" + connAttempts + "}");
+        println("Sending... [code:" + String(httpCode) + " ] " + connAttempts + " Attempt");
 
-        if (httpCode == 200)
+        if (httpCode == HTTP_CODE_OK)
         {
             String payload = http.getString();
-            Serial.println("Received: " + payload);
+            println("Received: " + payload);
             ident = payload;
 
             http.end();
@@ -84,9 +83,8 @@ bool sendStart(String &ident)
         }
 
         connAttempts++;
-        delay(5000);
+        delay(netTimeout);
     }
-
     http.end();
     return false;
 }

@@ -11,7 +11,7 @@ void initEEPROM()
   EEPROM.begin(CounterSize + IdentSize);
 }
 
-void reset()
+void resetEEPROM()
 {
   int pictureNumber = 0;
   String ident = "00000000000000";

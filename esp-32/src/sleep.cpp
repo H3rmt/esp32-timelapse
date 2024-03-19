@@ -11,7 +11,7 @@ void sleep()
 {
   delay(3000); // wait for 3d printer to leave trigger
   wifiOff();
-  Serial.println("Initiating deep sleep...");
+  println("Initiating deep sleep...");
 
   // IMPORTANT - we define pin mode for the trigger pin at the end of setup, because most pins on the ESP32-CAM
   // have dual functions, and may have previously been used by the camera or SD card access. So we overwrite them here

@@ -1,7 +1,7 @@
 #pragma once
 
-void reset();
 void initEEPROM();
+void resetEEPROM();
 int incCounter();
 int getCurrentCounter();
 void setIdent(String);

@@ -35,14 +35,14 @@ camera_config_t configCam()
 
     if (psramFound())
     {
-        Serial.println("using psram");
+        println("using psram");
         config.frame_size = FRAMESIZE_UXGA; // FRAMESIZE_ + QVGA|CIF|VGA|SVGA|XGA|SXGA|UXGA
         config.jpeg_quality = 12;
         config.fb_count = 2;
     }
     else
     {
-        Serial.println("not using psram");
+        println("not using psram");
         config.frame_size = FRAMESIZE_SVGA;
         config.jpeg_quality = 12;
         config.fb_count = 1;
@@ -92,6 +92,5 @@ void initFlash()
 }
 void setFlash(uint32_t power)
 {
-    Serial.println("setFlash: " + String(power));
     ledcWrite(7, power);
 }

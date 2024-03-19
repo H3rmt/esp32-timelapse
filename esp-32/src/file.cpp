@@ -1,4 +1,4 @@
-#define BOARD_HAS_1BIT_SDMMC
+// #define BOARD_HAS_1BIT_SDMMC
 
 #include <Arduino.h>
 #include <FS.h>
