@@ -8,6 +8,8 @@ try:
   lines = f.readlines()
   envs = []
   for line in lines:
+    if line.strip().startswith("#") or "=" not in line:
+      continue
     name = line.strip().split("=")[0].strip()
     value = line.strip().split("=")[1].strip()
     envs.append("-D " + name + "='" + value + "'")
@@ -17,3 +19,4 @@ except IOError:
   print("File .env not accessible")
 finally:
   f.close()
+  print("Finished loading .env file")

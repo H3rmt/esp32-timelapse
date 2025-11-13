@@ -2,12 +2,9 @@
 
 #include <Arduino.h>
 #include <FS.h>
-// #include <SD.h>
-// #include <LittleFS.h>
 #include <SD_MMC.h>
 #include <esp_camera.h>
 
-// #include "esp_vfs_fat.h"
 #include "file.hpp"
 
 bool openSD()

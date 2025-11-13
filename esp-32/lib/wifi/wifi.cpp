@@ -7,13 +7,24 @@
 
 bool connectWIFI()
 {
-  // WiFi.disconnect();
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  print("Connecting to WIFI SSID");
+  println(WIFI_SSID);
+
+  const bool disconnect = WiFi.disconnect();
+  print("WIFI disconnected: ");
+  println(disconnect);
+  
+  WiFiClass::mode(WIFI_MODE_STA);
+  println("WIFI mode set to WIFI_STA");
+  const wl_status_t wifi = WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  print("WIFI begin returned: ");
+  println(wifi);
+  WiFi.setSleep(false);
   delay(wifiStartTimeout);
 
+  println("WIFI connection attempt started");
   int connAttempts = 0;
-  while (connAttempts <= 24)
+  while (connAttempts <= wifiConnectionAttempts)
   {
     print("Connecting WIFI... (");
     print(WiFi.status());
@@ -45,5 +56,5 @@ bool connectWIFI()
 void wifiOff()
 {
   WiFi.disconnect(true);
-  WiFi.mode(WIFI_OFF);
+  WiFiClass::mode(WIFI_OFF);
 }

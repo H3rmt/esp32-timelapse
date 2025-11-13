@@ -13,8 +13,8 @@ void initEEPROM()
 
 void resetEEPROM()
 {
-  int pictureNumber = 0;
-  String ident = "00000000000000";
+  constexpr int pictureNumber = 0;
+  const String ident = "00000000000000";
 
   EEPROM.put(0, pictureNumber);
   EEPROM.writeString(CounterSize, ident);
@@ -41,7 +41,7 @@ int getCurrentCounter()
   return pictureNumber;
 }
 
-void setIdent(String ident)
+void setIdent(const String& ident)
 {
   EEPROM.writeString(CounterSize, ident);
   EEPROM.commit();
@@ -52,5 +52,5 @@ String getIdent()
   char ident[15];
 
   EEPROM.get(CounterSize, ident);
-  return String(ident);
+  return String(ident); // NOLINT(*-return-braced-init-list)
 }

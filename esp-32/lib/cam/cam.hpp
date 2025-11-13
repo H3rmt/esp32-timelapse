@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Arduino.h>
 #include <esp_camera.h>
 
 camera_config_t configCam();
