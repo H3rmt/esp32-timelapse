@@ -1,12 +1,10 @@
-FROM rust:1.73.0 as build
+FROM docker.io/rust:1.91.0-slim AS build
 WORKDIR /app
 COPY Cargo.toml Cargo.lock /app/
 COPY src /app/src
-RUN cargo install --path .
-RUN cd /usr/local/cargo/bin && echo $(ls)
+RUN cargo build --release --locked
 
-FROM debian:bookworm-slim
-RUN apt-get update & apt-get install -y extra-runtime-dependencies ffmpeg & rm -rf /var/lib/apt/lists/*
-
-COPY --from=build /usr/local/cargo/bin/esp-32-img-server /app/esp-32-img-server
-CMD ["/app/esp-32-img-server"]
+FROM debian:13.0-slim
+RUN apt-get update && apt-get install -y ffmpeg && rm -rf /var/lib/apt/lists/*
+COPY --from=build /app/target/release/esp-32-img-server /server
+CMD ["/server"]
