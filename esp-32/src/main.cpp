@@ -78,7 +78,7 @@ void setup() {
     delay(photoDelay);
     println("taking Photo");
     const camera_fb_t *camera_fb = esp_camera_fb_get();
-    delay(1000);
+    delay(500);
     setFlash(0);
 
     if (!camera_fb) {

@@ -35,7 +35,7 @@ camera_config_t configCam() {
         config.frame_size = FRAMESIZE_UXGA; // FRAMESIZE_ + QVGA|CIF|VGA|SVGA|XGA|SXGA|UXGA
         config.fb_location = CAMERA_FB_IN_PSRAM;
         config.grab_mode = CAMERA_GRAB_LATEST;
-        config.jpeg_quality = 10;
+        config.jpeg_quality = 9;
         config.fb_count = 2;
     } else {
         println("not using psram");
@@ -51,30 +51,39 @@ camera_config_t configCam() {
 
 void configSensor() {
     sensor_t *s = esp_camera_sensor_get();
-    s->set_framesize(s, FRAMESIZE_UXGA);
-    s->set_quality(s, 3);
+
+    // Resolution & quality
+    s->set_framesize(s, FRAMESIZE_UXGA); // 1600x1200
+    s->set_quality(s, 10); // 10–15 recommended; lower = more compression
+    s->set_dcw(s, 1); // Enable downsize to improve clarity
+
+    // Color adjustments (keep neutral)
     s->set_brightness(s, 1);
-    s->set_contrast(s, 1);
-    s->set_saturation(s, 2);
+    s->set_contrast(s, 2);
+    s->set_saturation(s, 1); // Over-saturation often causes yellow
 
-    s->set_wb_mode(s, 0);
-    s->set_whitebal(s, 1);
-    s->set_awb_gain(s, 1);
+    // ⭐ White balance configuration
+    s->set_whitebal(s, 1); // Enable auto white balance
+    s->set_awb_gain(s, 1); // Auto WB gain ON
+    s->set_wb_mode(s, 0); // "Auto" white balance
 
-    s->set_gainceiling(s, GAINCEILING_64X);
-    s->set_gain_ctrl(s, 1);
-    s->set_exposure_ctrl(s, 1);
+    // Exposure / Gain
+    s->set_gain_ctrl(s, 1); // Auto gain control ON
+    s->set_exposure_ctrl(s, 1); // Auto exposure ON
+    s->set_gainceiling(s, GAINCEILING_32X); // 32X is enough; 64X often blows out warm tones
+    s->set_aec2(s, 1); // Improved AEC
+    s->set_ae_level(s, 0); // Default AE level
 
-    s->set_aec2(s, 1);
-    s->set_ae_level(s, 0);
+    // Lens / Sensor corrections
+    s->set_lenc(s, 1); // Enable lens correction
+    s->set_bpc(s, 1); // Black pixel correction
+    s->set_wpc(s, 1); // White pixel correction
+    // s->set_raw_gma(s, 1);                 // Try enabling if whites are still too warm
 
-    s->set_bpc(s, 0);
-    s->set_wpc(s, 1);
-    s->set_raw_gma(s, 0);
-    s->set_lenc(s, 1);
-    s->set_dcw(s, 0);
+    // Orientation (optional)
+    s->set_hmirror(s, 0);
+    s->set_vflip(s, 0);
 }
-
 
 void initFlash() {
     // Use PWM channel 7 to control the white on-board LED (flash) connected to GPIO 4

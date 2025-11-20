@@ -1,3 +1,5 @@
+#pragma once
+
 // delay after connecting to WIFI (ms)
 #define wifiDelay 1000
 
@@ -5,10 +7,10 @@
 #define wifiConnectionAttempts 24
 
 // how long to wait for Connection check after connecting to WIFI (ms)
-#define wifiTimeout 1000
+#define wifiTimeout 500
 
 // how long to wait for initial Connection check after connecting to WIFI (ms)
-#define wifiStartTimeout 2000
+#define wifiStartTimeout 1000
 
 
 #ifdef debug

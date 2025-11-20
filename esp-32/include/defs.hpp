@@ -9,14 +9,14 @@
 // #define SERVER_PORT 0
 
 // 0 - 255 flash rightness (0 - 80) makes more sense as range
-#define flashPower 200
+#define flashPower 80
 
-// sensor triggered time = 0; 150ms + photoDelay + ~200ms for photo => time when photo is taken
-// here ~2500 ms as last delay
+// sensor triggered time = 0; 300ms starting + 150ms + photoDelay + ~500ms for photo => time when photo is taken
+// here ~3000 ms as last delay
 // delay after activating flash and taking photo (ms)
 #define photoDelay 2000
 
-// sensor triggered time = 0; 150ms + photoDelay + ~200ms for photo + detectDelay => time when finish is checked
+// sensor triggered time = 0; 300ms starting + 150ms + photoDelay + ~500ms for photo + detectDelay => time when finish is checked
 // here ~8000 ms as last delay
 // delay in milliseconds to wait after picture to check if printer is finished
 #define detectDelay 5000
