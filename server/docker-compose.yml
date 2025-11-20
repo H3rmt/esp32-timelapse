@@ -8,5 +8,6 @@ services:
       - "8080:8080"
     environment:
       - FPS=7
+      - RUST_LOG=debug
     volumes:
-      - ./imgs-d:/images
+      - ./imgs-b:/images
