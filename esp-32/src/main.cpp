@@ -24,13 +24,14 @@
 #endif
 
 #define FLASH_SEQUENCE(power, sleep) \
-  setFlash((power) / 2); \
-  delay(200);               \
-  setFlash(0);                \
-  delay(sleep);               \
-  setFlash((power) / 2); \
-  delay(200);               \
-  setFlash(0);
+  setFlash(power);       \
+  delay(200);            \
+  setFlash(0);           \
+  delay(sleep);          \
+  setFlash(power);       \
+  delay(200);            \
+  setFlash(0);           \
+  delay(sleep)
 
 [[noreturn]] void errorLEDLoop(int code);
 
@@ -41,7 +42,7 @@ void initWiFi(bool loop);
 void setup() {
     Serial.begin(115200);
     Serial.setDebugOutput(true);
-
+    pinMode(GPIO_NUM_13, INPUT_PULLUP);
     pinMode(GPIO_NUM_33, OUTPUT); // internal LED
     digitalWrite(GPIO_NUM_33, HIGH); // OFF
     initEEPROM();
@@ -53,30 +54,10 @@ void setup() {
     rtc_gpio_hold_dis(GPIO_NUM_4);
     initFlash();
 
-    String ident;
-    if (getCurrentCounter() == 0)
-    {
-        println("START detected");
-        FLASH_SEQUENCE(40, 500);
-
-        initWiFi(true);
-        if (!sendStart(ident)) {
-            println("START failed");
-            println("going to sleep early");
-            errorLEDLoop(ERROR_SEND_START_FAILED);
-        }
-        println("START success");
-        setIdent(ident);
-    } else {
-        ident = getIdent();
+    bool start = false;
+    if (getCurrentCounter() == 0) {
+        start = true;
     }
-
-    print("Identifier: ");
-    println(ident);
-
-    const int pictureNumber = incCounter();
-    print("pictureNumber: ");
-    println(pictureNumber);
 
     const camera_config_t config = configCam();
 
@@ -92,12 +73,12 @@ void setup() {
     }
 
     configSensor();
-
     setFlash(flashPower);
 
     delay(photoDelay);
     println("taking Photo");
     const camera_fb_t *camera_fb = esp_camera_fb_get();
+    delay(1000);
     setFlash(0);
 
     if (!camera_fb) {
@@ -111,8 +92,45 @@ void setup() {
 
     delay(detectDelay);
     const int finish = digitalRead(GPIO_NUM_13);
+    if (finish == LOW) {
+        println("DETECTED FINISH");
+        FLASH_SEQUENCE(30, 1500);
+        FLASH_SEQUENCE(60, 1500);
+    }
 
-    initWiFi(false);
+    String ident;
+    if (start) {
+        println("START detected");
+        FLASH_SEQUENCE(30, 500);
+        FLASH_SEQUENCE(60, 300);
+
+        initWiFi(true);
+        if (!sendStart(ident)) {
+            println("START failed");
+            println("going to sleep early");
+            errorLEDLoop(ERROR_SEND_START_FAILED);
+        }
+        println("START success");
+        setIdent(ident);
+        incCounter();
+        print("Identifier: ");
+        println(ident);
+
+        // don't upload the picture taken on start.
+        // only upload the first pic after being woken up from sleep
+        println("Going to Sleep");
+        sleep();
+    } else {
+        initWiFi(false);
+        ident = getIdent();
+    }
+    print("Identifier: ");
+    println(ident);
+
+    const int pictureNumber = incCounter();
+    print("pictureNumber: ");
+    println(pictureNumber);
+
     if (!sendPic(String(camera_fb->buf, camera_fb->len), String(pictureNumber), ident)) {
         println("Sending Image failed");
         println("going to sleep early");
@@ -124,11 +142,9 @@ void setup() {
 
     if (finish == LOW) // IF LOW
     {
-        println("DETECTED FINISH");
-        FLASH_SEQUENCE(40, 2000);
-
         if (!sendFinish(pictureNumber + 1, ident)) {
-            println("FINISH failed");
+            println("FINISH failed, resetting eeprom anyway");
+            resetEEPROM();
             println("going to sleep early");
             errorLED(ERROR_SEND_FINISH_FAILED);
             sleep();

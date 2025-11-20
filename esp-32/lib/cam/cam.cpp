@@ -53,21 +53,21 @@ void configSensor() {
     sensor_t *s = esp_camera_sensor_get();
     s->set_framesize(s, FRAMESIZE_UXGA);
     s->set_quality(s, 3);
-    s->set_brightness(s, -1);
+    s->set_brightness(s, 1);
     s->set_contrast(s, 1);
     s->set_saturation(s, 2);
 
-    // s->set_wb_mode(s, 0);
-    // s->set_whitebal(s, 1);
-    // s->set_awb_gain(s, 1);
-    //
-    // s->set_gainceiling(s, GAINCEILING_64X);
-    // s->set_gain_ctrl(s, 1);
-    // s->set_exposure_ctrl(s, 1);
-    //
-    // s->set_aec2(s, 1);
-    // s->set_ae_level(s, 0);
-    //
+    s->set_wb_mode(s, 0);
+    s->set_whitebal(s, 1);
+    s->set_awb_gain(s, 1);
+
+    s->set_gainceiling(s, GAINCEILING_64X);
+    s->set_gain_ctrl(s, 1);
+    s->set_exposure_ctrl(s, 1);
+
+    s->set_aec2(s, 1);
+    s->set_ae_level(s, 0);
+
     s->set_bpc(s, 0);
     s->set_wpc(s, 1);
     s->set_raw_gma(s, 0);
