@@ -7,7 +7,8 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - FPS=7
+      - LAYER_FPS=7
+      - MINUTE_FPS=30
       - RUST_LOG=debug
     volumes:
-      - ./imgs-b:/images
+      - ./imgs-c:/images
