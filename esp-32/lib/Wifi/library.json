@@ -1,0 +1,8 @@
+{
+  "name": "Wifi",
+  "dependencies": [
+    {
+      "name": "Core"
+    }
+  ]
+}

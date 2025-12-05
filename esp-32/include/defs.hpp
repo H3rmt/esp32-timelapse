@@ -1,5 +1,7 @@
 #pragma once
 
+#define MAGNET GPIO_NUM_13
+
 // loaded from .env
 // #define WIFI_SSID ""
 // #define WIFI_PASSWORD ""
@@ -14,13 +16,18 @@
 // sensor triggered time = 0; 300ms starting + 150ms + photoDelay + ~500ms for photo => time when photo is taken
 // here ~3000 ms as last delay
 // delay after activating flash and taking photo (ms)
-#define photoDelay 2000
+#define photoDelay 1500
 
 // sensor triggered time = 0; 300ms starting + 150ms + photoDelay + ~500ms for photo + detectDelay => time when finish is checked
 // here ~8000 ms as last delay
 // delay in milliseconds to wait after picture to check if printer is finished
 #define detectDelay 5000
 
+// approx number of seconds to wait between minute images
+#define minuteMinutesDelay 120
+
+// delay in ms on how long to wait after interupt was trigered to accept next interrupt
+#define interruptDebounceDelay 1000 * 20
 
 // 500 ms blink
 #define ERROR_SD_INIT_FAILED 2
@@ -33,23 +40,3 @@
 #define ERROR_CAM_GET_FAILED 7
 #define ERROR_SAVE_IMG_FAILED 8
 #define ERROR_SEND_FINISH_FAILED 9
-
-
-#ifdef debug
-#define print(d) Serial.print(d);
-#define println(d) Serial.println(d);
-#define printf(d, ...) Serial.printf(d, __VA_ARGS__);
-#else
-#define print(d) \
-    do           \
-    {            \
-    } while (0)
-#define println(d) \
-    do             \
-    {              \
-    } while (0)
-#define printf(d, ...) \
-    do                 \
-    {                  \
-    } while (0)
-#endif

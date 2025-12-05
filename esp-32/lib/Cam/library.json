@@ -1,0 +1,8 @@
+{
+  "name": "Cam",
+  "dependencies": [
+    {
+      "name": "Core"
+    }
+  ]
+}

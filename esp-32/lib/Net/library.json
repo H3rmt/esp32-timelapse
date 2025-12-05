@@ -1,0 +1,8 @@
+{
+  "name": "Net",
+  "dependencies": [
+    {
+      "name": "Core"
+    }
+  ]
+}
