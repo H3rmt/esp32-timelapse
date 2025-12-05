@@ -10,7 +10,7 @@ namespace Net {
 
     bool sendPic(const String &pic, const String &pictureNumber, const String &ident, bool layer);
 
-    bool sendFinish(int pictureCount, const String &ident);
+    bool sendFinish(int layerCount, int minuteCount, const String &ident);
 
     bool sendStart(String &ident);
 

@@ -40,11 +40,13 @@ bool Net::sendPic(const String &pic, const String &pictureNumber, const String &
     return false;
 }
 
-bool Net::sendFinish(const int pictureCount, const String &ident) {
+bool Net::sendFinish(const int layerCount, const int minuteCount, const String &ident) {
     abortSendFlag = false;
 
     HTTPClient http;
-    http.begin(SERVER_HOST, SERVER_PORT, String("/finish") + "?count=" + pictureCount + "&identifier=" + ident);
+    http.begin(SERVER_HOST, SERVER_PORT,
+               String("/finish") + "?layer_count=" + layerCount + "&minute_count=" + minuteCount + "&identifier=" +
+               ident);
     http.setAuthorization(SITE_USER, SITE_PASSWORD);
     http.setUserAgent("ESP32-CAM");
     http.setReuse(true);

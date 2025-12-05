@@ -78,6 +78,7 @@ void setup() {
     Core::initFlash();
     if (!Wifi::connect()) {
         Core::println("WIFI connection failed");
+        Wifi::disconnect();
         Debug::errorExit(ERROR_WIFI_FAILED);
     }
     Core::println("WIFI connection success");
@@ -105,6 +106,7 @@ void setup() {
         String ident;
         if (!Net::sendStart(ident)) {
             Core::println("START failed");
+            Wifi::disconnect();
             Debug::errorExit(ERROR_SEND_START_FAILED);
         }
         Core::print("START success. Identifier:");
@@ -113,14 +115,8 @@ void setup() {
     }
 }
 
-void layerPhoto() {
-    Core::println("timelapse photo layer");
-    const auto photo = takePhoto();
-    if (!photo) {
-        Core::println("Camera capture failed");
-        return;
-    }
-    Core::println("Camera capture success");
+// can be from layer photo or from
+void uploadLayerPhoto(const camera_fb_t *photo) {
     const auto counter = Storage::getCurrentLayerCounter();
     const auto identifier = Storage::getIdent();
 
@@ -141,15 +137,42 @@ void layerPhoto() {
     Storage::incLayerCounter();
 
     if (finish) {
-        if (const auto success = Net::sendFinish(counter + 1, identifier); !success) {
-            Core::println("FINISH success");
-        } else {
+        const auto minuteCounter = Storage::getCurrentMinuteCounter();
+        if (const auto success = Net::sendFinish(counter + 1, minuteCounter, identifier); !success) {
             Core::println("FINISH failed, resetting eeprom anyway");
+            Storage::reset();
+            Wifi::disconnect();
+            Debug::errorExit(ERROR_SEND_FINISH_FAILED);
         }
+        Core::println("FINISH success");
         Storage::reset();
         Wifi::disconnect();
         Debug::errorExit(0);
     }
+}
+
+void uploadMinutePhoto(const camera_fb_t *photo) {
+    const auto counter = Storage::getCurrentMinuteCounter();
+    const auto identifier = Storage::getIdent();
+
+    if (const auto success = Net::sendPic(String(photo->buf, photo->len), String(counter), identifier, false); !
+        success) {
+        Core::println("Sending Image failed");
+    } else {
+        Core::println("Send success");
+    }
+    Storage::incMinuteCounter();
+}
+
+void layerPhoto() {
+    Core::println("timelapse photo layer");
+    const auto photo = takePhoto();
+    if (!photo) {
+        Core::println("Camera capture failed");
+        return;
+    }
+    Core::println("Camera capture success");
+    uploadLayerPhoto(photo);
 }
 
 void minutePhoto() {
@@ -160,28 +183,11 @@ void minutePhoto() {
         return;
     }
     Core::println("Camera capture success");
-    const auto counter = Storage::getCurrentMinuteCounter();
-    const auto identifier = Storage::getIdent();
-
+    // if layer was triggered during capture
     if (interrupt_flag) {
-        const auto layerCounter = Storage::getCurrentLayerCounter();
-        // upload photo as layer and minute instead
-        if (const auto success = Net::sendPic(String(photo->buf, photo->len), String(layerCounter), identifier, true);
-            !success) {
-            Core::println("Sending Image failed");
-        } else {
-            Core::println("Send success");
-        }
-        Storage::incLayerCounter();
+        uploadLayerPhoto(photo);
     }
-
-    if (const auto success = Net::sendPic(String(photo->buf, photo->len), String(counter), identifier, false); !
-        success) {
-        Core::println("Sending Image failed");
-    } else {
-        Core::println("Send success");
-    }
-    Storage::incMinuteCounter();
+    uploadMinutePhoto(photo);
 }
 
 unsigned long lastMillis = millis();
