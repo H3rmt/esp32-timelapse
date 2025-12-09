@@ -2,7 +2,6 @@ services:
   esp32-timelapse-server:
     # image: h3rmt/esp32-timelapse-server
     build: .
-    user: 1000:1000
     restart: always
     ports:
       - "8080:8080"
@@ -11,4 +10,4 @@ services:
       - MINUTE_FPS=30
       - RUST_LOG=debug
     volumes:
-      - ./imgs-c:/images
+      - ./imgs-f:/images

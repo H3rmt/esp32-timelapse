@@ -30,6 +30,7 @@ async fn main() {
     let app = Router::new()
         .route("/upload", post(upload))
         .route("/finish", get(finish))
+        .route("/latest", get(latest))
         .route("/start", get(start));
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8080")
@@ -40,6 +41,9 @@ async fn main() {
 }
 
 async fn test() {
+    let id = Command::new("id").output().await.expect("Cant run id");
+    log::debug!("id: {}", String::from_utf8_lossy(&id.stdout).strip_suffix("\n").unwrap_or(""));
+
     env::var(LAYER_FPS_NAME).expect(&format!("Error: {LAYER_FPS_NAME} not found"));
     log::debug!("LAYER_FPS_NAME env found");
     env::var(MINUTE_FPS_NAME).expect(&format!("Error: {MINUTE_FPS_NAME} not found"));
@@ -65,9 +69,9 @@ async fn test() {
 }
 
 async fn start() -> Result<String, StatusCode> {
-    let time_str = Local::now().format("%y-%m-%d");
+    let time_str = Local::now().format("%y-%m-%d-%H");
     let mut rng = rand::rng();
-    let identifier = format!("{time_str}_{}", rng.random_range(100..999));
+    let identifier = format!("{time_str}_{}", rng.random_range(00..99));
 
     fs::create_dir_all(format!("{FOLDER_NAME}/{identifier}")).map_err(|e| {
         log::warn!("Error: Could not create folder ({e})");
@@ -88,7 +92,7 @@ struct UploadParams {
 #[debug_handler]
 async fn upload(Query(params): Query<UploadParams>, body: Bytes) -> impl IntoResponse {
     let time_str = Local::now().format("%y-%m-%d_%H:%M:%S");
-    log::info!("Received image: ({time_str})");
+    log::info!("Received image: ({time_str}) for params: {params:?}");
 
     let count = params.count.ok_or_else(|| {
         log::warn!("Error: Count param not found");
@@ -105,7 +109,7 @@ async fn upload(Query(params): Query<UploadParams>, body: Bytes) -> impl IntoRes
         log::warn!("Error: Layer param not found");
         StatusCode::BAD_REQUEST
     })?;
-    let img_type = if layer == "true" {
+    let img_type = if layer == "1" {
         LAYER_NAME
     } else {
         MINUTE_NAME
@@ -196,4 +200,86 @@ async fn finish(Query(params): Query<FinishParams>) -> impl IntoResponse {
 
     log::info!("Finished exporting video {layer_path} and {minute_path}");
     Ok::<(), axum::response::ErrorResponse>(())
+}
+
+#[derive(Debug, Deserialize)]
+struct LatestParams {
+    identifier: Option<String>,
+    layer: Option<String>,
+}
+
+#[debug_handler]
+async fn latest(Query(params): Query<LatestParams>) -> impl IntoResponse {
+    let identifier = if let Some(id) = params.identifier {
+        id
+    } else {
+        // choose the last identifier (latest directory) under `images`
+        let mut last_id: Option<String> = None;
+        let read_root = fs::read_dir(FOLDER_NAME).map_err(|e| {
+            log::warn!("Error: Could not read folder ({e})");
+            StatusCode::NOT_FOUND
+        })?;
+
+        for entry in read_root {
+            let entry = entry.map_err(|e| {
+                log::warn!("Error: Could not read directory entry ({e})");
+                StatusCode::INTERNAL_SERVER_ERROR
+            })?;
+            let file_type = entry.file_type().map_err(|e| {
+                log::warn!("Error: Could not get file type ({e})");
+                StatusCode::INTERNAL_SERVER_ERROR
+            })?;
+            if !file_type.is_dir() {
+                continue;
+            }
+            let name = entry.file_name().to_string_lossy().to_string();
+            // skip already finished folders
+            if last_id.as_ref().map_or(true, |f| name > *f) {
+                last_id = Some(name);
+            }
+        }
+
+        last_id.ok_or_else(|| {
+            log::warn!("Error: No identifiers found");
+            StatusCode::NOT_FOUND
+        })?
+    };
+
+    let layer = params.layer.unwrap_or_else(|| "false".to_string());
+    let img_type = if layer == "true" { LAYER_NAME } else { MINUTE_NAME };
+
+    let dir = format!("{FOLDER_NAME}/{identifier}");
+    log::debug!("Reading images from: {dir}");
+
+    let mut latest_file: Option<String> = None;
+    let read_dir = fs::read_dir(&dir).map_err(|e| {
+        log::warn!("Error: Could not read folder ({e})");
+        StatusCode::NOT_FOUND
+    })?;
+
+    for entry in read_dir {
+        let entry = entry.map_err(|e| {
+            log::warn!("Error: Could not read directory entry ({e})");
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+        let name = entry.file_name().to_string_lossy().to_string();
+        if name.starts_with(&format!("{img_type}_")) && name.ends_with(".jpg") {
+            if latest_file.as_ref().map_or(true, |f| name > *f) {
+                latest_file = Some(name);
+            }
+        }
+    }
+
+    let fname = latest_file.ok_or_else(|| {
+        log::warn!("Error: No images found");
+        StatusCode::NOT_FOUND
+    })?;
+
+    let path = format!("{dir}/{fname}");
+    let data = tokio::fs::read(&path).await.map_err(|e| {
+        log::warn!("Error: Could not read file ({path}) ({e})");
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
+    Ok::<_, StatusCode>((StatusCode::OK, [("content-type", "image/jpeg")], Bytes::from(data)))
 }
