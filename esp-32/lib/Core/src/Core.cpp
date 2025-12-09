@@ -3,7 +3,10 @@
 
 void Core::initFlash() {
     // Use PWM channel 7 to control the white on-board LED (flash) connected to GPIO 4
+    // ledcSetup(GPIO_NUM_4, 5000, 8);
+    // ledcAttachPin(GPIO_NUM_4, GPIO_NUM_4);
     ledcAttach(GPIO_NUM_4, 5000, 8);
+    ledcWrite(GPIO_NUM_4, 0);
     ledcWrite(GPIO_NUM_4, 0);
 }
 
@@ -41,7 +44,7 @@ void Core::println(const int value) {
 void Core::printf(const char *format, ...) {
     va_list args;
     va_start(args, format);
-    Serial.vprintf(format, args);
+    vprintf(format, args);
     va_end(args);
 }
 #else

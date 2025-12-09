@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <EEPROM.h>
 
-#include "EEprom.hpp"
+#include "Storage.hpp"
 
 #define CounterSize sizeof(int)
 #define IdentSize sizeof(char[15])
@@ -54,12 +54,16 @@ int Storage::getCurrentMinuteCounter() {
 }
 
 void Storage::setIdent(const String &ident) {
-    EEPROM.writeString(CounterSize, ident);
+    String s = ident;
+    if (s.length() > 14) {
+        s = s.substring(0, 14);
+    }
+    EEPROM.writeString(CounterSize, s);
     EEPROM.commit();
 }
 
 String Storage::getIdent() {
-    char ident[15];
+    char ident[17];
     EEPROM.get(CounterSize, ident);
     return {ident};
 }

@@ -1,11 +1,13 @@
 Platformio (platform = espressif32):
+```
 19:08:17.354 -> ##################################
 19:08:17.354 -> Internal Total heap 302712, internal Free Heap 259092
 19:08:17.354 -> SPIRam Total heap 4194304, SPIRam Free Heap 4192124
 19:08:17.385 -> ChipRevision 301, Cpu Freq 240, SDK Version v5.5.1-255-g07e9bf4970
 19:08:17.385 -> Flash Size 4194304, Flash Speed 40000000
 19:08:17.385 -> ##################################
-
+```
+```
 Arduino IDE:
 19:09:05.525 -> ##################################
 19:09:05.525 -> Internal Total heap 374580, internal Free Heap 330892
@@ -13,7 +15,8 @@ Arduino IDE:
 19:09:05.525 -> ChipRevision 301, Cpu Freq 240, SDK Version v5.5.1-418-gf1a1df9b2e
 19:09:05.525 -> Flash Size 4194304, Flash Speed 80000000
 19:09:05.525 -> ##################################
-
+```
+```
 Platformio (platform new):
 19:24:51.833 -> ##################################
 19:24:51.833 -> Internal Total heap 302712, internal Free Heap 259092
@@ -21,7 +24,7 @@ Platformio (platform new):
 19:24:51.833 -> ChipRevision 301, Cpu Freq 240, SDK Version v5.5.1-255-g07e9bf4970
 19:24:51.864 -> Flash Size 4194304, Flash Speed 40000000
 19:24:51.864 -> ##################################
-
+```
 
 
 ```cpp

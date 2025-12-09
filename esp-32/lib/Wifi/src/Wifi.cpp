@@ -6,11 +6,14 @@
 #include <Core.hpp>
 
 bool Wifi::connect() {
-    Core::print("Connecting to WIFI SSID");
-    Core::println(WIFI_SSID);
+    Core::print("Setting Hostname: ");
+    Core::println(ESP_HOSTNAME);
     WiFiClass::mode(WIFI_MODE_STA);
+    WiFiClass::setHostname(ESP_HOSTNAME);
+    Core::print("Connecting to WIFI SSID: ");
+    Core::println(WIFI_SSID);
+    WiFi.disconnect();
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-    WiFi.setSleep(false);
     delay(startTimeout);
 
     Core::println("WIFI connection attempt started");
@@ -41,4 +44,8 @@ bool Wifi::connect() {
 void Wifi::disconnect() {
     WiFi.disconnect(true);
     WiFiClass::mode(WIFI_OFF);
+}
+
+void Wifi::reconnect() {
+    WiFi.reconnect();
 }

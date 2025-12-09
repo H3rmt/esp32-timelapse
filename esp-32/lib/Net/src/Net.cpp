@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <Core.hpp>
 #include <HTTPClient.h>
-#include <esp_camera.h>
+#include <Wifi.hpp>
 #include <Net.hpp>
 
 bool Net::sendPic(const String &pic, const String &pictureNumber, const String &ident, const bool layer) {
@@ -11,6 +11,8 @@ bool Net::sendPic(const String &pic, const String &pictureNumber, const String &
     http.begin(SERVER_HOST, SERVER_PORT,
                String("/upload") + "?count=" + pictureNumber + "&identifier=" + ident + "&layer=" + String(layer));
     http.setAuthorization(SITE_USER, SITE_PASSWORD);
+    http.setConnectTimeout(1000);
+    http.setTimeout(2000);
     http.setUserAgent("ESP32-CAM");
     http.setReuse(true);
 
@@ -34,6 +36,10 @@ bool Net::sendPic(const String &pic, const String &pictureNumber, const String &
             http.end();
             return false;
         }
+        if (connAttempts == netRetries / 2) {
+            Wifi::reconnect();
+            Core::println("Reconnecting Wifi...");
+        }
         delay(netRetryDelay);
     }
     http.end();
@@ -48,6 +54,8 @@ bool Net::sendFinish(const int layerCount, const int minuteCount, const String &
                String("/finish") + "?layer_count=" + layerCount + "&minute_count=" + minuteCount + "&identifier=" +
                ident);
     http.setAuthorization(SITE_USER, SITE_PASSWORD);
+    http.setConnectTimeout(1000);
+    http.setTimeout(2000);
     http.setUserAgent("ESP32-CAM");
     http.setReuse(true);
 
@@ -72,6 +80,10 @@ bool Net::sendFinish(const int layerCount, const int minuteCount, const String &
             http.end();
             return false;
         }
+        if (connAttempts == netRetries / 2) {
+            Wifi::reconnect();
+            Core::println("Reconnecting Wifi...");
+        }
         delay(netRetryDelay);
     }
     http.end();
@@ -84,6 +96,8 @@ bool Net::sendStart(String &ident) {
     HTTPClient http;
     http.begin(SERVER_HOST, SERVER_PORT, "/start");
     http.setAuthorization(SITE_USER, SITE_PASSWORD);
+    http.setConnectTimeout(1000);
+    http.setTimeout(2000);
     http.setUserAgent("ESP32-CAM");
     http.setReuse(true);
 
@@ -109,6 +123,10 @@ bool Net::sendStart(String &ident) {
             abortSendFlag = false;
             http.end();
             return false;
+        }
+        if (connAttempts == netRetries / 2) {
+            Wifi::reconnect();
+            Core::println("Reconnecting Wifi...");
         }
         delay(netRetryDelay);
     }

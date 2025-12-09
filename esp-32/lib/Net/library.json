@@ -3,6 +3,9 @@
   "dependencies": [
     {
       "name": "Core"
+    },
+    {
+      "name": "Wifi"
     }
   ]
 }

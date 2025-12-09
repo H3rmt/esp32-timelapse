@@ -36,7 +36,7 @@ camera_config_t Cam::configCam() {
         config.frame_size = FRAMESIZE_UXGA; // FRAMESIZE_ + QVGA|CIF|VGA|SVGA|XGA|SXGA|UXGA
         config.fb_location = CAMERA_FB_IN_PSRAM;
         config.grab_mode = CAMERA_GRAB_LATEST;
-        config.jpeg_quality = 9;
+        config.jpeg_quality = 10;
         config.fb_count = 2;
     } else {
         Core::println("not using psram");

@@ -1,5 +1,5 @@
 {
-  "name": "EEprom",
+  "name": "Storage",
   "dependencies": [
     {
       "name": "Core"

@@ -1,6 +1,7 @@
 #pragma once
 
 #define MAGNET GPIO_NUM_13
+#define EXTERN_FLASH GPIO_NUM_15
 
 // loaded from .env
 // #define WIFI_SSID ""
@@ -14,7 +15,7 @@
 #define flashPower 80
 
 // delay after activating flash and taking photo (ms)
-#define photoDelay 1500
+#define photoDelay 1200
 
 // delay in milliseconds to wait after picture to check if printer is finished
 #define detectDelay 8000
