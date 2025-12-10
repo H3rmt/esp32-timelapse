@@ -28,9 +28,11 @@ async fn main() {
     test().await;
 
     let app = Router::new()
+        .route("/", get(index))
         .route("/upload", post(upload))
         .route("/finish", get(finish))
-        .route("/latest", get(latest))
+        .route("/latest-image", get(latest_image))
+        .route("/final-video", get(final_video))
         .route("/start", get(start));
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8080")
@@ -209,7 +211,7 @@ struct LatestParams {
 }
 
 #[debug_handler]
-async fn latest(Query(params): Query<LatestParams>) -> impl IntoResponse {
+async fn latest_image(Query(params): Query<LatestParams>) -> impl IntoResponse {
     let identifier = if let Some(id) = params.identifier {
         id
     } else {
@@ -276,10 +278,143 @@ async fn latest(Query(params): Query<LatestParams>) -> impl IntoResponse {
     })?;
 
     let path = format!("{dir}/{fname}");
+    log::debug!("Reading image from: {path}");
     let data = tokio::fs::read(&path).await.map_err(|e| {
         log::warn!("Error: Could not read file ({path}) ({e})");
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
 
     Ok::<_, StatusCode>((StatusCode::OK, [("content-type", "image/jpeg")], Bytes::from(data)))
+}
+
+#[debug_handler]
+async fn final_video(Query(params): Query<LatestParams>) -> impl IntoResponse {
+    let identifier = if let Some(id) = params.identifier {
+        id
+    } else {
+        let mut last_id: Option<String> = None;
+        let read_root = fs::read_dir(FOLDER_NAME).map_err(|e| {
+            log::warn!("Error: Could not read folder ({e})");
+            StatusCode::NOT_FOUND
+        })?;
+
+        for entry in read_root {
+            let entry = entry.map_err(|e| {
+                log::warn!("Error: Could not read directory entry ({e})");
+                StatusCode::INTERNAL_SERVER_ERROR
+            })?;
+            let file_type = entry.file_type().map_err(|e| {
+                log::warn!("Error: Could not get file type ({e})");
+                StatusCode::INTERNAL_SERVER_ERROR
+            })?;
+            if !file_type.is_dir() {
+                continue;
+            }
+            let name = entry.file_name().to_string_lossy().to_string();
+            if last_id.as_ref().map_or(true, |f| name > *f) {
+                last_id = Some(name);
+            }
+        }
+
+        last_id.ok_or_else(|| {
+            log::warn!("Error: No identifiers found");
+            StatusCode::NOT_FOUND
+        })?
+    };
+
+    let layer = params.layer.unwrap_or_else(|| "false".to_string());
+    let prefix = if layer == "true" { LAYER_NAME } else { MINUTE_NAME };
+
+    let dir = format!("{FOLDER_NAME}/{identifier}");
+    log::debug!("Reading videos from: {dir}");
+
+    let mut latest_file: Option<String> = None;
+    let read_dir = fs::read_dir(&dir).map_err(|e| {
+        log::warn!("Error: Could not read folder ({e})");
+        StatusCode::NOT_FOUND
+    })?;
+
+    for entry in read_dir {
+        let entry = entry.map_err(|e| {
+            log::warn!("Error: Could not read directory entry ({e})");
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+        let name = entry.file_name().to_string_lossy().to_string();
+        if name.starts_with(prefix) && name.ends_with(".mp4") {
+            if latest_file.as_ref().map_or(true, |f| name > *f) {
+                latest_file = Some(name);
+            }
+        }
+    }
+
+    let fname = latest_file.ok_or_else(|| {
+        log::warn!("Error: No videos found");
+        StatusCode::NOT_FOUND
+    })?;
+
+    let path = format!("{dir}/{fname}");
+    log::debug!("Reading video from: {path}");
+    let data = tokio::fs::read(&path).await.map_err(|e| {
+        log::warn!("Error: Could not read file ({path}) ({e})");
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
+    Ok::<_, StatusCode>((StatusCode::OK, [("content-type", "video/mp4")], Bytes::from(data)))
+}
+
+#[debug_handler]
+async fn index() -> impl IntoResponse {
+    fn html_escape(s: &str) -> String {
+        s.replace('&', "&amp;")
+            .replace('<', "&lt;")
+            .replace('>', "&gt;")
+            .replace('"', "&quot;")
+    }
+
+    let mut ids: Vec<String> = Vec::new();
+    let read_root = fs::read_dir(FOLDER_NAME).map_err(|e| {
+        log::warn!("Error: Could not read folder ({e})");
+        StatusCode::NOT_FOUND
+    })?;
+
+    for entry in read_root {
+        let entry = entry.map_err(|e| {
+            log::warn!("Error: Could not read directory entry ({e})");
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+        let file_type = entry.file_type().map_err(|e| {
+            log::warn!("Error: Could not get file type ({e})");
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+        if !file_type.is_dir() {
+            continue;
+        }
+        let name = entry.file_name().to_string_lossy().to_string();
+        ids.push(name);
+    }
+    ids.sort();
+    ids.reverse();
+
+    let mut html = String::new();
+    html.push_str("<!doctype html><html><head><meta charset=\"utf-8\"><title>Identifiers</title></head><body>");
+    html.push_str("<h1>Identifiers</h1><ul>");
+
+    for id in ids {
+        let disp = html_escape(&id);
+        // use raw id in query params (identifiers are expected to be filesystem-safe like `yy-mm-dd-HH_xx`)
+        html.push_str(&format!(
+            "<li><strong>{}</strong> — <a href=\"/latest-image?identifier={}&layer=true\">last layer image</a> | <a href=\"/latest-image?identifier={}&layer=false\">last minute image</a>",
+            disp, id, id
+        ));
+        if id.contains("-finished-") {
+            html.push_str(&format!(
+                " | <a href=\"/final-video?identifier={}&layer=true\">layer video</a> | <a href=\"/final-video?identifier={}&layer=false\">minute video</a>",
+                id, id
+            ));
+        }
+        html.push_str("</li>");
+    }
+
+    html.push_str("</ul></body></html>");
+    Ok::<_, StatusCode>((StatusCode::OK, [("content-type", "text/html; charset=utf-8")], html))
 }

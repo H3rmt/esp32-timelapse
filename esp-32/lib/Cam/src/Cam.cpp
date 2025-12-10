@@ -57,7 +57,8 @@ void Cam::configSensor() {
     s->set_quality(s, 12);
 
     // Color
-    s->set_brightness(s, 0);
+    // s->set_brightness(s, 0);
+    s->set_brightness(s, 2);
     s->set_contrast(s, -1);
     s->set_saturation(s, -1);
 
