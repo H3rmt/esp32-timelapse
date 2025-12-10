@@ -116,6 +116,11 @@ async fn upload(Query(params): Query<UploadParams>, body: Bytes) -> impl IntoRes
         log::warn!("Error: Layer param not found");
         StatusCode::BAD_REQUEST
     })?;
+    if body.len() < 100 {
+        log::warn!("Error: Image data too small");
+        return Err(StatusCode::BAD_REQUEST.into());
+    }
+
     let img_type = if layer == "1" {
         LAYER_NAME
     } else {
@@ -255,7 +260,7 @@ async fn latest_image(Query(params): Query<LatestParams>) -> impl IntoResponse {
     };
 
     let layer = params.layer.unwrap_or_else(|| "false".to_string());
-    let img_type = if layer == "true" {
+    let img_type = if layer == "1" {
         LAYER_NAME
     } else {
         MINUTE_NAME
@@ -338,7 +343,7 @@ async fn final_video(Query(params): Query<LatestParams>) -> impl IntoResponse {
     };
 
     let layer = params.layer.unwrap_or_else(|| "false".to_string());
-    let video_name = if layer == "true" {
+    let video_name = if layer == "1" {
         LAYER_NAME
     } else {
         MINUTE_NAME
