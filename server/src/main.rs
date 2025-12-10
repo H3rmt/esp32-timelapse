@@ -44,7 +44,12 @@ async fn main() {
 
 async fn test() {
     let id = Command::new("id").output().await.expect("Cant run id");
-    log::debug!("id: {}", String::from_utf8_lossy(&id.stdout).strip_suffix("\n").unwrap_or(""));
+    log::debug!(
+        "id: {}",
+        String::from_utf8_lossy(&id.stdout)
+            .strip_suffix("\n")
+            .unwrap_or("")
+    );
 
     env::var(LAYER_FPS_NAME).expect(&format!("Error: {LAYER_FPS_NAME} not found"));
     log::debug!("LAYER_FPS_NAME env found");
@@ -181,6 +186,7 @@ async fn finish(Query(params): Query<FinishParams>) -> impl IntoResponse {
         &format!("{FOLDER_NAME}/{identifier}-finished-{layer_count}-{minute_count}"),
         &layer_fps,
         &format!("{LAYER_NAME}_*.jpg"),
+        LAYER_NAME,
     )
     .await
     .map_err(|e| {
@@ -193,6 +199,7 @@ async fn finish(Query(params): Query<FinishParams>) -> impl IntoResponse {
         &format!("{FOLDER_NAME}/{identifier}-finished-{layer_count}-{minute_count}"),
         &minute_fps,
         &format!("{MINUTE_NAME}_*.jpg"),
+        MINUTE_NAME,
     )
     .await
     .map_err(|e| {
@@ -248,7 +255,11 @@ async fn latest_image(Query(params): Query<LatestParams>) -> impl IntoResponse {
     };
 
     let layer = params.layer.unwrap_or_else(|| "false".to_string());
-    let img_type = if layer == "true" { LAYER_NAME } else { MINUTE_NAME };
+    let img_type = if layer == "true" {
+        LAYER_NAME
+    } else {
+        MINUTE_NAME
+    };
 
     let dir = format!("{FOLDER_NAME}/{identifier}");
     log::debug!("Reading images from: {dir}");
@@ -284,7 +295,11 @@ async fn latest_image(Query(params): Query<LatestParams>) -> impl IntoResponse {
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
 
-    Ok::<_, StatusCode>((StatusCode::OK, [("content-type", "image/jpeg")], Bytes::from(data)))
+    Ok::<_, StatusCode>((
+        StatusCode::OK,
+        [("content-type", "image/jpeg")],
+        Bytes::from(data),
+    ))
 }
 
 #[debug_handler]
@@ -323,7 +338,11 @@ async fn final_video(Query(params): Query<LatestParams>) -> impl IntoResponse {
     };
 
     let layer = params.layer.unwrap_or_else(|| "false".to_string());
-    let prefix = if layer == "true" { LAYER_NAME } else { MINUTE_NAME };
+    let video_name = if layer == "true" {
+        LAYER_NAME
+    } else {
+        MINUTE_NAME
+    };
 
     let dir = format!("{FOLDER_NAME}/{identifier}");
     log::debug!("Reading videos from: {dir}");
@@ -340,7 +359,7 @@ async fn final_video(Query(params): Query<LatestParams>) -> impl IntoResponse {
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
         let name = entry.file_name().to_string_lossy().to_string();
-        if name.starts_with(prefix) && name.ends_with(".mp4") {
+        if name.starts_with(video_name) && name.ends_with(".mp4") {
             if latest_file.as_ref().map_or(true, |f| name > *f) {
                 latest_file = Some(name);
             }
@@ -359,7 +378,11 @@ async fn final_video(Query(params): Query<LatestParams>) -> impl IntoResponse {
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
 
-    Ok::<_, StatusCode>((StatusCode::OK, [("content-type", "video/mp4")], Bytes::from(data)))
+    Ok::<_, StatusCode>((
+        StatusCode::OK,
+        [("content-type", "video/mp4")],
+        Bytes::from(data),
+    ))
 }
 
 #[debug_handler]
@@ -416,5 +439,9 @@ async fn index() -> impl IntoResponse {
     }
 
     html.push_str("</ul></body></html>");
-    Ok::<_, StatusCode>((StatusCode::OK, [("content-type", "text/html; charset=utf-8")], html))
+    Ok::<_, StatusCode>((
+        StatusCode::OK,
+        [("content-type", "text/html; charset=utf-8")],
+        html,
+    ))
 }
