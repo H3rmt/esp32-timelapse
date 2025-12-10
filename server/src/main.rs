@@ -392,14 +392,7 @@ async fn final_video(Query(params): Query<LatestParams>) -> impl IntoResponse {
 
 #[debug_handler]
 async fn index() -> impl IntoResponse {
-    fn html_escape(s: &str) -> String {
-        s.replace('&', "&amp;")
-            .replace('<', "&lt;")
-            .replace('>', "&gt;")
-            .replace('"', "&quot;")
-    }
-
-    let mut ids: Vec<String> = Vec::new();
+    let mut ids: Vec<(String, u16)> = Vec::new();
     let read_root = fs::read_dir(FOLDER_NAME).map_err(|e| {
         log::warn!("Error: Could not read folder ({e})");
         StatusCode::NOT_FOUND
@@ -418,26 +411,51 @@ async fn index() -> impl IntoResponse {
             continue;
         }
         let name = entry.file_name().to_string_lossy().to_string();
-        ids.push(name);
+        let mut images = 0;
+        if let Ok(sub_read) = fs::read_dir(entry.path()) {
+            for sub_ent in sub_read.flatten() {
+                if let Ok(sub_ft) = sub_ent.file_type() {
+                    if sub_ft.is_file() {
+                        images += 1;
+                    }
+                }
+            }
+        } else {
+            log::warn!("Error: Could not read subfolder for validation ({})", name);
+        }
+        ids.push((name, images));
     }
-    ids.sort();
-    ids.reverse();
+    ids.sort_by(|a, b| b.0.cmp(&a.0));
 
-    let mut html = String::new();
-    html.push_str("<!doctype html><html><head><meta charset=\"utf-8\"><title>Identifiers</title></head><body>");
-    html.push_str("<h1>Identifiers</h1><ul>");
+    let mut html = String::from("<!doctype html><html><head><meta charset=\"utf-8\"><title>Identifiers</title><style>\
+body{font-family:Arial,Helvetica,sans-serif;font-size:1.8rem;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;height:calc(100dvh - 40px);padding:20px;margin:0;background:#ffffff;color:#000000}\
+h1{margin:0 0 12px 0;padding:0}\
+ul{list-style:none;padding:0 1rem;margin:0;overflow:auto}\
+li{margin:0;padding:8px 0;border-bottom:1px solid #eee;display:flex;align-items:center;gap:1rem}\
+span{font-weight:700;min-width:19ch;display:inline-block}\
+a{text-decoration:none;color:#0366d6}\
+a:hover{text-decoration:underline}\
+.grey{color:grey}
+@media (prefers-color-scheme:dark){body{background:#0b1117;color:#c9d1d9}li{border-bottom:1px solid #222}a{color:#58a6ff}}\
+/* Custom scrollbars */\
+::-webkit-scrollbar { width: 12px; height: 12px; }\
+::-webkit-scrollbar-track { background: transparent; border-radius: 8px; }\
+* { scrollbar-color: rgba(15,23,42,0.5) transparent; }\
+@media (prefers-color-scheme:dark){ \
+  * { scrollbar-color: rgba(255,255,255,0.12) transparent; } \
+}\
+</style></head><body><h1>Identifiers</h1><ul>");
 
-    for id in ids {
-        let disp = html_escape(&id);
+    for (id, images) in ids {
         // use raw id in query params (identifiers are expected to be filesystem-safe like `yy-mm-dd-HH_xx`)
         html.push_str(&format!(
-            "<li><strong>{}</strong> — <a href=\"/latest-image?identifier={}&layer=true\">last layer image</a> | <a href=\"/latest-image?identifier={}&layer=false\">last minute image</a>",
-            disp, id, id
+            "<li><span {}>{id}{}</span> &gt; <a href=\"/latest-image?identifier={id}&layer=1\">last layer image</a> | <a href=\"/latest-image?identifier={id}&layer=0\">last minute image</a>",
+            if images != 0 { "" } else { "class=\"grey\"" },
+            if images != 0 { &format!(" ({images})") } else { "" }
         ));
         if id.contains("-finished-") {
             html.push_str(&format!(
-                " | <a href=\"/final-video?identifier={}&layer=true\">layer video</a> | <a href=\"/final-video?identifier={}&layer=false\">minute video</a>",
-                id, id
+                " | <a href=\"/final-video?identifier={id}&layer=1\">layer video</a> | <a href=\"/final-video?identifier={id}&layer=0\">minute video</a>",
             ));
         }
         html.push_str("</li>");

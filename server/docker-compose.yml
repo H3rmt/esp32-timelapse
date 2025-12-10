@@ -1,7 +1,9 @@
 services:
   esp32-timelapse-server:
-    # image: h3rmt/esp32-timelapse-server
-    build: .
+    # image: ghcr.io/h3rmt/esp32-timelapse-server
+    build:
+      context: .
+      dockerfile: Containerfile
     restart: always
     ports:
       - "8080:8080"
