@@ -1,7 +1,4 @@
 /target
 
-/imgsOld
-/imgs
-/imgs-d
-/imgs-b
-/imgs-c
+/imgs*
+*.jpg
