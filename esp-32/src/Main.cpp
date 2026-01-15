@@ -177,14 +177,9 @@ void pictureLoop() {
     }
     if (interrupt_flag) {
         interrupt_flag = false;
-        delay(10);
+        delay(100);
         if (digitalRead(MAGNET) == HIGH) {
             Core::println("Error - false interrupt");
-            return;
-        }
-        delay(10);
-        if (digitalRead(MAGNET) == HIGH) {
-            Core::println("Error - false interrupt (2)");
             return;
         }
         layerPhoto();
