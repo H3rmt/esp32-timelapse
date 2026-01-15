@@ -39,7 +39,7 @@ camera_config_t Cam::configCam() {
         config.fb_location = CAMERA_FB_IN_PSRAM;
         config.grab_mode = CAMERA_GRAB_LATEST;
         config.jpeg_quality = 15;
-        config.fb_count = 1;
+        config.fb_count = 2;
     } else {
         Core::println("not using psram");
         config.frame_size = FRAMESIZE_SVGA;
