@@ -5,7 +5,7 @@
 
 #include <Core.hpp>
 
-bool Wifi::connect() {
+bool CWifi::connect() {
     Core::print("Setting Hostname: ");
     Core::println(ESP_HOSTNAME);
     WiFiClass::mode(WIFI_MODE_STA);
@@ -41,11 +41,11 @@ bool Wifi::connect() {
     return false;
 }
 
-void Wifi::disconnect() {
+void CWifi::disconnect() {
     WiFi.disconnect(true);
     WiFiClass::mode(WIFI_OFF);
 }
 
-void Wifi::reconnect() {
+void CWifi::reconnect() {
     WiFi.reconnect();
 }

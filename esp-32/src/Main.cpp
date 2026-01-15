@@ -54,7 +54,7 @@ camera_fb_t *takePhoto() {
     Core::println("taking Photo");
     camera_fb_t *camera_fb = esp_camera_fb_get();
     if (!camera_fb) {
-        delay(200);
+        delay(250);
         Core::println("Taking Photo failed, tying again");
         camera_fb = esp_camera_fb_get();
     }
@@ -94,10 +94,10 @@ void uploadLayerPhoto(const camera_fb_t *photo) {
         Core::println("no FINISH detected");
     }
 
-    if (const auto success = Net::sendPic(String(photo->buf, photo->len), String(counter), identifier, true);
+    if (const auto success = Net::sendPic(photo->buf, photo->len, String(counter), identifier, true);
         !success) {
         Core::println("Sending Image failed, try again");
-        if (const auto success2 = Net::sendPic(String(photo->buf, photo->len), String(counter), identifier, true);
+        if (const auto success2 = Net::sendPic(photo->buf, photo->len, String(counter), identifier, true);
             !success2) {
             Core::println("Sending Image failed");
         } else {
@@ -112,12 +112,12 @@ void uploadLayerPhoto(const camera_fb_t *photo) {
         if (const auto success = Net::sendFinish(counter + 1, minuteCounter, identifier); !success) {
             Core::println("FINISH failed, resetting eeprom anyway");
             Storage::reset();
-            Wifi::disconnect();
+            CWifi::disconnect();
             Debug::errorExit(ERROR_SEND_FINISH_FAILED);
         }
         Core::println("FINISH success");
         Storage::reset();
-        Wifi::disconnect();
+        CWifi::disconnect();
         Debug::errorExit(0);
     }
 }
@@ -127,7 +127,7 @@ void uploadMinutePhoto(const camera_fb_t *photo) {
     const auto identifier = Storage::getIdent();
     Storage::incMinuteCounter();
 
-    if (const auto success = Net::sendPic(String(photo->buf, photo->len), String(counter), identifier, false); !
+    if (const auto success = Net::sendPic(photo->buf, photo->len, String(counter), identifier, false); !
         success) {
         Core::println("Sending Image failed");
     } else {
@@ -144,9 +144,9 @@ void layerPhoto() {
         ESP.restart();
         return;
     }
-    esp_camera_fb_return(photo);
     Core::println("Camera capture success");
     uploadLayerPhoto(photo);
+    esp_camera_fb_return(photo);
 }
 
 void minutePhoto() {
@@ -158,17 +158,17 @@ void minutePhoto() {
         ESP.restart();
         return;
     }
-    esp_camera_fb_return(photo);
     Core::println("Camera capture success");
     // if layer was triggered during capture
     if (interrupt_flag) {
         uploadLayerPhoto(photo);
     }
     uploadMinutePhoto(photo);
+    esp_camera_fb_return(photo);
 }
 
 
-unsigned long lastMillis = millis();
+unsigned long lastMillis = millis() - minuteMinutesDelay * 1000 + 20 * 1000;
 
 void pictureLoop() {
     ArduinoOTA.handle();
@@ -182,6 +182,11 @@ void pictureLoop() {
             Core::println("Error - false interrupt");
             return;
         }
+        delay(10);
+        if (digitalRead(MAGNET) == HIGH) {
+            Core::println("Error - false interrupt (2)");
+            return;
+        }
         layerPhoto();
     }
     if (millis() - lastMillis >= minuteMinutesDelay * 1000) {
@@ -193,6 +198,14 @@ void pictureLoop() {
 
 [[noreturn]] void customSetup(void *optionalArgs) {
     Serial.begin(115200);
+#ifdef WAIT_FOR_SERIAL
+    while (!Serial.available()) {
+        Core::print(".");
+        delay(200);
+    }
+    Serial.read();
+#endif
+    Core::println("Started");
     pinMode(MAGNET, INPUT_PULLUP);
     pinMode(EXTERN_FLASH, OUTPUT);
     digitalWrite(EXTERN_FLASH, HIGH);
@@ -209,7 +222,7 @@ void pictureLoop() {
     // A short pause helps to ensure the I2C interface has initialised properly before attempting to detect the camera
     if (const esp_err_t err = esp_camera_init(&config); err != 0) {
         Core::printf("Camera init failed with error 0x%x\n", err);
-        Wifi::disconnect();
+        CWifi::disconnect();
         Debug::error(ERROR_CAM_INIT_FAILED);
         esp_ota_mark_app_invalid_rollback_and_reboot();
         ESP.restart();
@@ -218,9 +231,9 @@ void pictureLoop() {
     Core::println("Camera init success");
 
     Core::initFlash();
-    if (!Wifi::connect()) {
+    if (!CWifi::connect()) {
         Core::println("WIFI connection failed");
-        Wifi::disconnect();
+        CWifi::disconnect();
         Debug::error(ERROR_WIFI_FAILED);
         esp_ota_mark_app_invalid_rollback_and_reboot();
         ESP.restart();
@@ -239,7 +252,7 @@ void pictureLoop() {
         String ident;
         if (!Net::sendStart(ident)) {
             Core::println("START failed");
-            Wifi::disconnect();
+            CWifi::disconnect();
             Debug::error(ERROR_SEND_START_FAILED);
             esp_ota_mark_app_invalid_rollback_and_reboot();
             ESP.restart();

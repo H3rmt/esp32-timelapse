@@ -27,34 +27,47 @@ camera_config_t Cam::configCam() {
     config.pin_sccb_scl = SIOC_GPIO_NUM;
     config.pin_pwdn = PWDN_GPIO_NUM;
     config.pin_reset = RESET_GPIO_NUM;
-    config.xclk_freq_hz = 20000000;
-    // config.xclk_freq_hz = 10000000;
+    // config.xclk_freq_hz = 20000000;
+    config.xclk_freq_hz = 15000000;
+
     config.pixel_format = PIXFORMAT_JPEG;
 
     if (psramFound()) {
         Core::println("using psram");
-        config.frame_size = FRAMESIZE_UXGA; // FRAMESIZE_ + QVGA|CIF|VGA|SVGA|XGA|SXGA|UXGA
+        // config.frame_size = FRAMESIZE_UXGA; // FRAMESIZE_ + QVGA|CIF|VGA|SVGA|XGA|SXGA|UXGA
+        config.frame_size = FRAMESIZE_SXGA;
         config.fb_location = CAMERA_FB_IN_PSRAM;
         config.grab_mode = CAMERA_GRAB_LATEST;
-        config.jpeg_quality = 10;
-        config.fb_count = 2;
+        config.jpeg_quality = 15;
+        config.fb_count = 1;
     } else {
         Core::println("not using psram");
         config.frame_size = FRAMESIZE_SVGA;
         config.fb_location = CAMERA_FB_IN_DRAM;
-        config.jpeg_quality = 12;
+        config.jpeg_quality = 15;
         config.fb_count = 1;
     }
 
     return config;
 }
 
-
 void Cam::configSensor() {
     sensor_t *s = esp_camera_sensor_get();
 
-    s->set_framesize(s, FRAMESIZE_SVGA);
-    s->set_quality(s, 12);
+    // s->set_framesize(s, FRAMESIZE_SXGA);
+    // s->set_quality(s, 20);
+
+    s->set_brightness(s, 2);
+    s->set_contrast(s, -1);
+    s->set_saturation(s, -1);
+}
+
+#ifdef old
+void Cam::configSensor() {
+    sensor_t *s = esp_camera_sensor_get();
+
+    // s->set_framesize(s, FRAMESIZE_UXGA);
+    // s->set_quality(s, 12);
 
     // Color
     // s->set_brightness(s, 0);
@@ -80,3 +93,4 @@ void Cam::configSensor() {
     s->set_lenc(s, 1);
     s->set_dcw(s, 1);
 }
+#endif
