@@ -13,6 +13,7 @@ use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 use tokio::process::Command;
 use tracing::{debug, info, warn};
+use tracing_subscriber::EnvFilter;
 
 const LAYER_FPS_NAME: &str = "LAYER_FPS";
 const MINUTE_FPS_NAME: &str = "MINUTE_FPS";
@@ -24,7 +25,14 @@ const MINUTE_NAME: &str = "minute";
 
 #[tokio::main]
 async fn main() {
-    env_logger::init();
+    let filter = EnvFilter::try_from_default_env()
+        .unwrap_or_else(|_| "esp_32_img_server=info".to_string().into());
+    let subscriber = tracing_subscriber::fmt()
+        .with_timer(tracing_subscriber::fmt::time::time())
+        .with_env_filter(filter)
+        .finish();
+    tracing::subscriber::set_global_default(subscriber)
+        .unwrap_or_else(|e| warn!("Unable to initialize logging: {e}"));
 
     test().await;
 
@@ -39,7 +47,7 @@ async fn main() {
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8080")
         .await
         .expect("server failed to start");
-    info!("listening on {:?}", listener);
+    info!("listening on {:?}", listener.local_addr().unwrap());
     axum::serve(listener, app).await.unwrap();
 }
 
@@ -99,7 +107,7 @@ struct UploadParams {
     layer: Option<String>,
 }
 
-#[tracing::instrument]
+#[tracing::instrument(skip(body))]
 async fn upload(Query(params): Query<UploadParams>, body: Bytes) -> impl IntoResponse {
     let time_str = Local::now().format("%y-%m-%d_%H:%M:%S");
     info!("Received image: ({time_str}) for params: {params:?}");
@@ -204,7 +212,7 @@ async fn finish(Query(params): Query<FinishParams>) -> impl IntoResponse {
             &format!("{LAYER_NAME}_*.jpg"),
             LAYER_NAME,
         )
-            .await
+        .await
         {
             Ok(path) => info!("Background exported layer video: {path}"),
             Err(e) => warn!("Error: Could not export layer video in background ({e})"),
@@ -215,7 +223,7 @@ async fn finish(Query(params): Query<FinishParams>) -> impl IntoResponse {
             &format!("{MINUTE_NAME}_*.jpg"),
             MINUTE_NAME,
         )
-            .await
+        .await
         {
             Ok(path) => info!("Background exported minute video: {path}"),
             Err(e) => warn!("Error: Could not export minute video in background ({e})"),
@@ -401,7 +409,7 @@ async fn final_video(Query(params): Query<LatestParams>) -> impl IntoResponse {
 }
 
 async fn index() -> impl IntoResponse {
-    let mut ids: Vec<(String, u16)> = Vec::new();
+    let mut ids: Vec<(String, u16, u16)> = Vec::new();
     let read_root = fs::read_dir(FOLDER_NAME).map_err(|e| {
         warn!("Error: Could not read folder ({e})");
         StatusCode::NOT_FOUND
@@ -420,19 +428,27 @@ async fn index() -> impl IntoResponse {
             continue;
         }
         let name = entry.file_name().to_string_lossy().to_string();
-        let mut images = 0;
+        let mut layers = 0;
+        let mut minutes = 0;
         if let Ok(sub_read) = fs::read_dir(entry.path()) {
             for sub_ent in sub_read.flatten() {
                 if let Ok(sub_ft) = sub_ent.file_type() {
                     if sub_ft.is_file() {
-                        images += 1;
+                        let img_name = sub_ent.file_name().to_string_lossy().to_string();
+                        if img_name.starts_with(LAYER_NAME) {
+                            layers += 1;
+                        } else if img_name.starts_with(MINUTE_NAME) {
+                            minutes += 1;
+                        } else {
+                            warn!("Error: Unknown image type ({img_name})");
+                        }
                     }
                 }
             }
         } else {
             warn!("Error: Could not read subfolder for validation ({})", name);
         }
-        ids.push((name, images));
+        ids.push((name, layers, minutes));
     }
     ids.sort_by(|a, b| b.0.cmp(&a.0));
 
@@ -445,6 +461,7 @@ span{font-weight:700;min-width:19ch;display:inline-block}\
 a{text-decoration:none;color:#0366d6}\
 a:hover{text-decoration:underline}\
 .grey{color:grey}
+.green{color:green}
 @media (prefers-color-scheme:dark){body{background:#0b1117;color:#c9d1d9}li{border-bottom:1px solid #222}a{color:#58a6ff}}\
 /* Custom scrollbars */\
 ::-webkit-scrollbar { width: 12px; height: 12px; }\
@@ -455,12 +472,12 @@ a:hover{text-decoration:underline}\
 }\
 </style></head><body><h1>Identifiers</h1><ul>");
 
-    for (id, images) in ids {
+    for (id, layers, minutes) in ids {
         // use raw id in query params (identifiers are expected to be filesystem-safe like `yy-mm-dd-HH_xx`)
         html.push_str(&format!(
             "<li><span {}>{id}{}</span> &gt; <a href=\"/latest-image?identifier={id}&layer=1\">last layer image</a> | <a href=\"/latest-image?identifier={id}&layer=0\">last minute image</a>",
-            if images != 0 { "" } else { "class=\"grey\"" },
-            if images != 0 { format!(" ({images})") } else { "".to_string() }
+            if layers + minutes != 0 { "" } else if id.contains("-finished-") {"class=\"green\""} else  { "class=\"grey\"" },
+            if layers + minutes != 0 { format!(" ({layers}/{minutes})") } else { "".to_string() }
         ));
         if id.contains("-finished-") {
             html.push_str(&format!(

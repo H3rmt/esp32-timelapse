@@ -5,9 +5,9 @@ COPY src /app/src
 RUN cargo build --release --locked
 
 FROM debian:13.1-slim
-RUN apt-get update && apt-get install -y ffmpeg && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y ffmpeg tini && rm -rf /var/lib/apt/lists/*
 COPY --from=build /app/target/release/esp-32-img-server /server
 COPY docker-entry.sh /docker-entry.sh
-RUN groupadd -r app && useradd -r -g app -d /nonexistent -s /usr/sbin/nologin app
-ENTRYPOINT ["/docker-entry.sh"]
+RUN groupadd -r -g 3000 app && useradd -r -g app -u 3000 -d /nonexistent -s /usr/sbin/nologin app
+ENTRYPOINT ["/bin/tini", "--", "/docker-entry.sh"]
 CMD ["/server"]
