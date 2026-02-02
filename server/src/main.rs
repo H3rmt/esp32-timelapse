@@ -2,7 +2,7 @@ mod consts;
 mod export;
 mod handlers;
 
-use crate::consts::{FOLDER_NAME, LAYER_FPS_NAME, MINUTE_FPS_NAME};
+use crate::consts::{FOLDER_NAME, LAYER_FPS_NAME, MINUTE_FPS_NAME, ROTATION_NAME};
 use crate::handlers::{final_video, finish, index, latest_image, start, upload};
 use axum::{routing::get, routing::post, Router};
 use std::{env, fs};
@@ -55,6 +55,14 @@ async fn test() {
     debug!("LAYER_FPS_NAME env found");
     env::var(MINUTE_FPS_NAME).unwrap_or_else(|_| panic!("Error: {MINUTE_FPS_NAME} not found"));
     debug!("MINUTE_FPS_NAME env found");
+    if let Ok(rotation) = env::var(ROTATION_NAME) {
+        if !["0", "90", "180", "270"].contains(&rotation.as_str()) {
+            panic!("Error: {ROTATION_NAME} must be 0, 90, 180, or 270");
+        }
+        debug!("ROTATION_NAME env found and validated");
+    } else {
+        debug!("ROTATION_NAME env not found (optional)");
+    }
 
     fs::create_dir_all(FOLDER_NAME).expect("Cant create folder");
     let mut file = File::create(format!("{FOLDER_NAME}/test"))

@@ -41,11 +41,12 @@ The easiest way to run the server is using Docker Compose.
 
 ### Environment Variables
 
-| Variable     | Description                                   | Default  |
+| Variable     | Description                                   |          |
 |--------------|-----------------------------------------------|----------|
 | `LAYER_FPS`  | Frames per second for the 'layer' timelapse.  | Required |
 | `MINUTE_FPS` | Frames per second for the 'minute' timelapse. | Required |
-| `TZ`         | Timezone for file naming.                     | `UTC`    |
+| `ROTATION`   | Rotation of the image (0, 90, 180, 270).      | Optional |
+| `TZ`         | Timezone for file naming.                     |          |
 
 ### Running with Docker Compose
 
@@ -59,6 +60,7 @@ services:
     environment:
       - LAYER_FPS=14
       - MINUTE_FPS=60
+      - ROTATION=180
       - TZ=Europe/Berlin
     volumes:
       - ./images:/images
