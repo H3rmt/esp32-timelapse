@@ -248,7 +248,13 @@ pub async fn latest_image(Query(params): Query<LatestParams>) -> impl IntoRespon
 
     Ok::<_, StatusCode>((
         StatusCode::OK,
-        [("content-type", "image/jpeg")],
+        [
+            ("content-type", "image/jpeg".to_string()),
+            (
+                "Content-Disposition",
+                format!("inline; filename=\"{identifier}_{fname}\""),
+            ),
+        ],
         Bytes::from(data),
     ))
 }
@@ -332,7 +338,13 @@ pub async fn final_video(Query(params): Query<LatestParams>) -> impl IntoRespons
 
     Ok::<_, StatusCode>((
         StatusCode::OK,
-        [("content-type", "video/mp4")],
+        [
+            ("content-type", "video/mp4".to_string()),
+            (
+                "Content-Disposition",
+                format!("inline; filename=\"{identifier}_{video_name}\""),
+            ),
+        ],
         Bytes::from(data),
     ))
 }
